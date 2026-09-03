@@ -2783,6 +2783,13 @@ const EXAM_TRAPS = [
     {label:{en:"\"A detective guardrail blocks it\"",uk:"\"Detective guardrail блокує\""}, note:{en:"wrong — it only flags after",uk:"хибно — лише позначає постфактум"}, fill:"rgba(220,38,38,.13)", stroke:"#DC2626", icon:"Config", arrowLabel:{en:"to actually block, use",uk:"щоб реально блокувати:"}},
     {label:{en:"Preventive guardrail (SCP)",uk:"Preventive guardrail (SCP)"}, note:{en:"actually blocks the API call",uk:"реально блокує API-виклик"}, fill:"rgba(22,163,74,.13)", stroke:"#16A34A", icon:"Control Tower"},
   ]},
+{ domain:1, title:{en:"RDS encryption can't be turned on after creation", uk:"Шифрування RDS не можна увімкнути після створення"},
+  explain:{en:"Unlike S3 (which has auto-encrypted every object by default since January 2023, with no way to opt out), RDS encryption can only be set at instance creation time. To encrypt an already-running unencrypted instance, you must take a snapshot, create an encrypted copy of that snapshot, then restore a new instance from the encrypted copy — there's no in-place toggle.",
+           uk:"На відміну від S3 (де кожен об'єкт автоматично шифрується за замовчуванням з січня 2023-го, без можливості відмовитись), шифрування RDS можна задати лише під час створення інстансу. Щоб зашифрувати вже працюючий незашифрований інстанс, потрібно зробити знімок, створити його зашифровану копію, а потім відновити новий інстанс із цієї копії — перемикача \"на льоту\" немає."},
+  steps:[
+    {label:{en:"\"Just enable encryption on it\"",uk:"\"Просто увімкнути шифрування\""}, note:{en:"wrong — no in-place toggle exists",uk:"хибно — немає перемикача на льоту"}, fill:"rgba(220,38,38,.13)", stroke:"#DC2626", icon:"RDS", arrowLabel:{en:"real path:",uk:"реальний шлях:"}},
+    {label:{en:"Snapshot → encrypted copy → restore",uk:"Знімок → зашифрована копія → відновлення"}, note:{en:"the only way to add it later",uk:"єдиний спосіб додати пізніше"}, fill:"rgba(22,163,74,.13)", stroke:"#16A34A", icon:"RDS"},
+  ]},
 // ---- Domain 2: Resilient (26%) ----
 { domain:2, title:{en:"RDS Multi-AZ's standby is never readable", uk:"Standby RDS Multi-AZ ніколи не читається"},
   explain:{en:"The Multi-AZ standby exists purely for automatic failover via a synchronous replica — it never serves read traffic. If the goal is offloading reads from the primary, Multi-AZ does nothing for that; you need a Read Replica instead.",
@@ -2846,6 +2853,27 @@ const EXAM_TRAPS = [
   steps:[
     {label:{en:"Primary + secondary record",uk:"Основний + резервний запис"}, note:{en:"no health check = no failover",uk:"без health check — без failover"}, fill:"rgba(220,38,38,.13)", stroke:"#DC2626", icon:"Route 53", arrowLabel:{en:"failover needs",uk:"failover потребує"}},
     {label:{en:"+ Health check on primary",uk:"+ Health check на primary"}, note:{en:"this is what triggers the switch",uk:"саме це запускає перемикання"}, fill:"rgba(22,163,74,.13)", stroke:"#16A34A", icon:"Route 53"},
+  ]},
+{ domain:2, title:{en:"NAT Gateway vs NAT Instance — a resilience trade, not just a rename", uk:"NAT Gateway проти NAT Instance — компроміс стійкості, не просто перейменування"},
+  explain:{en:"A NAT instance is just a regular EC2 instance doing NAT — it's a single point of failure unless you script your own failover, and its bandwidth is capped by the instance type. A NAT Gateway is AWS-managed, redundant within its AZ, and auto-scales from 5 Gbps up to 100 Gbps. Picking a NAT instance purely to save cost, without weighing the HA/bandwidth trade-off, is the trap.",
+           uk:"NAT instance — це звичайний інстанс EC2, що виконує NAT — він є єдиною точкою відмови, якщо ви самі не напишете failover, а його пропускна здатність обмежена типом інстансу. NAT Gateway керується AWS, надлишковий у межах своєї AZ і автомасштабується від 5 до 100 Гбіт/с. Обрати NAT instance лише заради економії, не зваживши компроміс HA/пропускної здатності, — це і є пастка."},
+  steps:[
+    {label:{en:"NAT Instance to save cost",uk:"NAT Instance заради економії"}, note:{en:"wrong tradeoff — SPOF, capped bandwidth",uk:"хибний компроміс — SPOF, обмежена пропускна здатність"}, fill:"rgba(220,38,38,.13)", stroke:"#DC2626", icon:"EC2", arrowLabel:{en:"production wants",uk:"для продакшена:"}},
+    {label:{en:"NAT Gateway",uk:"NAT Gateway"}, note:{en:"managed, redundant, up to 100 Gbps",uk:"керований, надлишковий, до 100 Гбіт/с"}, fill:"rgba(22,163,74,.13)", stroke:"#16A34A", icon:"NAT Gateway"},
+  ]},
+{ domain:2, title:{en:"VPC Peering has no single point of failure — a self-managed VPN/NAT instance does", uk:"VPC Peering не має єдиної точки відмови — самостійно керовані VPN/NAT instance мають"},
+  explain:{en:"VPC Peering is a direct, AWS-managed connection over the AWS backbone between two VPCs — no gateway device in the middle that could fail or bottleneck. A scenario asking for high-bandwidth VPC-to-VPC connectivity with no single point of failure wants Peering (or Transit Gateway for many VPCs); a self-managed VPN appliance or NAT instance sitting in the path is exactly the single point of failure the requirement is trying to avoid.",
+           uk:"VPC Peering — це пряме, кероване AWS з'єднання через магістральну мережу AWS між двома VPC — жодного шлюзового пристрою посередині, який міг би відмовити чи стати вузьким місцем. Сценарій, що вимагає високопропускного з'єднання VPC-VPC без єдиної точки відмови, хоче Peering (або Transit Gateway для багатьох VPC); самостійно керований VPN-пристрій чи NAT instance на шляху — це і є та єдина точка відмови, якої вимога намагається уникнути."},
+  steps:[
+    {label:{en:"Self-managed VPN/NAT appliance",uk:"Самостійний VPN/NAT пристрій"}, note:{en:"wrong — becomes the single point of failure",uk:"хибно — стає єдиною точкою відмови"}, fill:"rgba(220,38,38,.13)", stroke:"#DC2626", icon:"EC2", arrowLabel:{en:"no SPOF? use",uk:"без SPOF? — це"}},
+    {label:{en:"VPC Peering",uk:"VPC Peering"}, note:{en:"AWS-managed, no device in the path",uk:"кероване AWS, без пристрою на шляху"}, fill:"rgba(22,163,74,.13)", stroke:"#16A34A"},
+  ]},
+{ domain:2, title:{en:"RTO and RPO measure different things", uk:"RTO і RPO вимірюють різні речі"},
+  explain:{en:"RTO (Recovery Time Objective) is how long you can tolerate being down — it drives failover speed (active-active/warm standby for near-zero RTO). RPO (Recovery Point Objective) is how much data you can tolerate losing, measured in time — it drives replication frequency (synchronous Multi-AZ for near-zero RPO). Confusing the two means designing for the wrong constraint: a scenario demanding zero data loss needs synchronous replication (RPO), not necessarily instant failover (RTO), and vice versa.",
+           uk:"RTO (Recovery Time Objective) — це скільки часу можна бути offline — він визначає швидкість failover (active-active/warm standby для майже нульового RTO). RPO (Recovery Point Objective) — це скільки даних можна втратити, у одиницях часу — він визначає частоту реплікації (синхронний Multi-AZ для майже нульового RPO). Сплутати їх означає проєктувати не під те обмеження: сценарій, що вимагає нульової втрати даних, потребує синхронної реплікації (RPO), а не обов'язково миттєвого failover (RTO), і навпаки."},
+  steps:[
+    {label:{en:"\"Zero RPO means instant failover\"",uk:"\"Нульовий RPO = миттєвий failover\""}, note:{en:"wrong — that's what RTO measures",uk:"хибно — це вимірює RTO"}, fill:"rgba(220,38,38,.13)", stroke:"#DC2626", arrowLabel:{en:"reality:",uk:"насправді:"}},
+    {label:{en:["RTO = downtime tolerance","RPO = data-loss tolerance"],uk:["RTO = толерантність простою","RPO = толерантність втрати даних"]}, note:{en:"two separate dials to design for",uk:"два окремі параметри проєктування"}, fill:"rgba(22,163,74,.13)", stroke:"#16A34A"},
   ]},
 // ---- Domain 3: High-Performing (24%) ----
 { domain:3, title:{en:"ALB vs NLB — opposite cross-zone defaults", uk:"ALB проти NLB — протилежні дефолти cross-zone"},
@@ -2911,6 +2939,13 @@ const EXAM_TRAPS = [
     {label:{en:"EBS Multi-Attach",uk:"EBS Multi-Attach"}, note:{en:"same AZ only",uk:"лише в межах однієї AZ"}, fill:"rgba(220,38,38,.13)", stroke:"#DC2626", icon:"EBS", arrowLabel:{en:"multi-AZ shared? use",uk:"спільне на кілька AZ? — це"}},
     {label:{en:"EFS",uk:"EFS"}, note:{en:"POSIX, multi-AZ, concurrent",uk:"POSIX, multi-AZ, одночасно"}, fill:"rgba(22,163,74,.13)", stroke:"#16A34A", icon:"EFS"},
   ]},
+{ domain:3, title:{en:"Gateway endpoints only exist for S3 and DynamoDB — not other services", uk:"Gateway endpoints існують лише для S3 і DynamoDB — не для інших сервісів"},
+  explain:{en:"This isn't a cost-optimization choice — a Gateway VPC endpoint literally cannot be created for any service other than S3 or DynamoDB; the option doesn't exist in the console or API for anything else. Every other AWS service that supports PrivateLink uses an Interface endpoint instead (an ENI with a private IP, hourly + per-GB cost).",
+           uk:"Це не питання оптимізації вартості — Gateway VPC endpoint технічно неможливо створити для жодного сервісу, крім S3 чи DynamoDB; такого варіанту просто немає в консолі чи API для інших сервісів. Кожен інший сервіс AWS, що підтримує PrivateLink, використовує натомість Interface endpoint (ENI з приватною IP, погодинна плата + плата за ГБ)."},
+  steps:[
+    {label:{en:"Gateway endpoint for EC2/other",uk:"Gateway endpoint для EC2/іншого"}, note:{en:"wrong — doesn't exist, not just costly",uk:"хибно — не існує, а не просто дорого"}, fill:"rgba(220,38,38,.13)", stroke:"#DC2626", icon:"VPC Endpoints", arrowLabel:{en:"only S3/DynamoDB get",uk:"лише S3/DynamoDB мають"}},
+    {label:{en:"Gateway endpoint (S3, DynamoDB only)",uk:"Gateway endpoint (лише S3, DynamoDB)"}, note:{en:"everything else uses Interface",uk:"усе інше — через Interface"}, fill:"rgba(22,163,74,.13)", stroke:"#16A34A", icon:"S3"},
+  ]},
 // ---- Domain 4: Cost-Optimized (20%) ----
 { domain:4, title:{en:"Compute Savings Plans vs EC2 Instance Savings Plans vs RIs", uk:"Compute Savings Plans проти EC2 Instance Savings Plans проти RI"},
   explain:{en:"Compute Savings Plans are the most flexible (any instance family/region, covers Fargate/Lambda too) but the smallest discount. EC2 Instance Savings Plans lock to one family+region for a bigger discount. Reserved Instances are the least flexible but resellable on the RI Marketplace. The exam tests matching flexibility need to the right tier, not just \"which saves the most.\"",
@@ -2967,6 +3002,13 @@ const EXAM_TRAPS = [
   steps:[
     {label:{en:"\"Savings Plans resell too\"",uk:"\"Savings Plans теж перепродаються\""}, note:{en:"wrong — no resale mechanism",uk:"хибно — немає механізму перепродажу"}, fill:"rgba(220,38,38,.13)", stroke:"#DC2626", arrowLabel:{en:"only",uk:"лише"}},
     {label:{en:"Reserved Instances",uk:"Reserved Instances"}, note:{en:"resellable on RI Marketplace",uk:"можна перепродати на RI Marketplace"}, fill:"rgba(22,163,74,.13)", stroke:"#16A34A"},
+  ]},
+{ domain:4, title:{en:"The lowest per-GB storage class isn't always the cheapest overall", uk:"Найдешевший клас сховища за ГБ не завжди найдешевший загалом"},
+  explain:{en:"S3 Standard-IA and One Zone-IA charge a per-GB retrieval fee on top of storage, plus a 30-day minimum storage duration charge even if you delete the object sooner (Glacier tiers have longer minimums — 90 days for Flexible Retrieval, 180 for Deep Archive). For frequently-accessed or short-lived objects, the cheaper-looking storage tier can end up costing more in total than Standard. Always compare total cost of ownership for the actual access pattern, not the sticker storage price alone.",
+           uk:"S3 Standard-IA та One Zone-IA стягують плату за вилучення за ГБ понад зберігання, плюс плату за мінімальний термін зберігання 30 днів, навіть якщо об'єкт видалено раніше (рівні Glacier мають довші мінімуми — 90 днів для Flexible Retrieval, 180 для Deep Archive). Для часто використовуваних чи короткоживучих об'єктів дешевший на вигляд рівень сховища може в підсумку коштувати більше за Standard. Завжди порівнюй повну вартість володіння для реального патерну доступу, а не саму ціну зберігання на ярлику."},
+  steps:[
+    {label:{en:"Pick IA/Glacier by price tag alone",uk:"Обрати IA/Glacier лише за ціною"}, note:{en:"wrong — ignores retrieval + min. duration fees",uk:"хибно — ігнорує плату за вилучення + мінімум"}, fill:"rgba(220,38,38,.13)", stroke:"#DC2626", icon:"S3", arrowLabel:{en:"compare instead:",uk:"натомість порівнюй:"}},
+    {label:{en:"Total cost for the real access pattern",uk:"Повну вартість для реального патерну"}, note:{en:"storage + retrieval + min. duration",uk:"зберігання + вилучення + мінімум"}, fill:"rgba(22,163,74,.13)", stroke:"#16A34A", icon:"S3"},
   ]},
 ];
 
