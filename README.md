@@ -2,9 +2,10 @@
 
 A single self-contained, bilingual (English / Ukrainian) study tool for the
 AWS Certified Solutions Architect – Associate (SAA-C03) exam. No build step,
-no dependencies — one HTML file you can open directly in a browser or
-publish as a Claude Artifact.
+no dependencies — one HTML file you can open directly in a browser, publish
+as a Claude Artifact, or host as a static site.
 
+**Live site:** https://sergeyitaly.github.io/aws-c03-reference/
 **Published artifact:** https://claude.ai/code/artifact/1278e1e1-4e79-464d-af7b-484f39af0fc3
 
 ## What's in it
@@ -56,6 +57,7 @@ publish as a Claude Artifact.
 | File | Purpose |
 |---|---|
 | `SAA-C03-reference.html` | The entire application — open this in a browser or publish it as an Artifact. |
+| `index.html` | A one-line redirect to `SAA-C03-reference.html`, so the GitHub Pages root URL works without renaming the canonical file. |
 | `SAA-C03-service-reference.md` | The source-of-truth outline the HTML content was built from (21 numbered sections). Consult this before adding new content, to keep the HTML aligned with the original plan. |
 | `.claude/skills/manage-saa-c03-reference/SKILL.md` | How to safely extend this file — bilingual parity rules, validation workflow, exam-scope gotchas. **Read this before editing.** |
 
