@@ -10615,40 +10615,40 @@ const RADIAL_DOC_URLS = {
    it's a teaching hint (what typically pairs with what in real designs), not a completeness
    claim, so the sandbox stays freeform: any two services can still be manually connected. */
 const SERVICE_CONNECTIONS = {
-  "EC2": ["VPC","EBS","ELB","Auto Scaling","S3","RDS","CloudWatch","Systems Manager","IAM","Security Groups","Subnets","Internet Gateway"],
-  "Lambda": ["API Gateway","S3","DynamoDB","SQS","SNS","EventBridge","Step Functions","VPC","CloudWatch","Secrets Manager"],
+  "EC2": ["EBS","S3","RDS","CloudWatch","ElastiCache","MQ","FSx","EFS","DocumentDB","MemoryDB"],
+  "Lambda": ["DynamoDB","CloudWatch","ElastiCache","OpenSearch Service","SageMaker","Rekognition","Textract","Comprehend","Transcribe","Translate","Kendra","Fraud Detector","GuardDuty","EFS","Neptune","DocumentDB","Timestream","MemoryDB","VPC"],
   "Elastic Beanstalk": ["EC2","ELB","Auto Scaling","RDS","S3","CloudWatch"],
-  "ECS": ["EC2","Fargate","ELB","VPC","CloudWatch","Auto Scaling"],
-  "EKS": ["EC2","Fargate","VPC","ELB","CloudWatch","IAM","AWS Backup"],
-  "Fargate": ["ECS","EKS","VPC","CloudWatch"],
-  "Auto Scaling": ["EC2","ELB","CloudWatch","Elastic Beanstalk"],
+  "ECS": ["EC2","Fargate","CloudWatch","EFS","VPC"],
+  "EKS": ["EC2","Fargate","CloudWatch","GuardDuty","VPC"],
+  "Fargate": ["CloudWatch","VPC"],
+  "Auto Scaling": ["EC2","ELB","CloudWatch","ECS"],
   "Batch": ["EC2","Fargate","S3","CloudWatch","ECS"],
   "Lightsail": ["Route 53","CloudFront"],
-  "Outposts": ["VPC","Direct Connect","S3","EC2"],
-  "App Runner": ["VPC","CloudWatch","RDS"],
-  "S3": ["CloudFront","Lambda","Athena","Glue","EC2","KMS","S3 Glacier","Storage Gateway","AWS Backup","EMR","QuickSight","Macie","S3 Replication","S3 Batch Operations","AWS Transfer Family"],
-  "S3 Replication": ["S3","S3 Batch Replication","KMS"],
-  "S3 Batch Operations": ["S3","Lambda","S3 Batch Replication"],
-  "S3 Batch Replication": ["S3","S3 Replication","S3 Batch Operations"],
-  "S3 Glacier": ["S3","AWS Backup","Storage Gateway"],
-  "EBS": ["EC2","AWS Backup","KMS"],
-  "EFS": ["EC2","ECS","Lambda","AWS Backup","AWS Transfer Family"],
-  "FSx": ["EC2","AWS Backup","Storage Gateway"],
+  "Outposts": ["Direct Connect","S3","EC2","VPC"],
+  "App Runner": ["CloudWatch","RDS","VPC"],
+  "S3": ["S3 Glacier","EMR","QuickSight","Macie","S3 Replication","S3 Batch Operations","S3 Batch Replication","Athena","Glue","Lambda","Rekognition","Textract","Comprehend","Transcribe","Forecast","Kendra","Fraud Detector","GuardDuty","Neptune","Redshift"],
+  "S3 Replication": ["S3 Batch Replication","KMS"],
+  "S3 Batch Operations": ["Lambda","S3 Batch Replication"],
+  "S3 Batch Replication": [],
+  "S3 Glacier": [],
+  "EBS": ["GuardDuty"],
+  "EFS": [],
+  "FSx": [],
   "Storage Gateway": ["S3","S3 Glacier","EBS","FSx"],
-  "AWS Transfer Family": ["S3","EFS","IAM","CloudWatch"],
-  "S3 Transfer Acceleration": ["S3","CloudFront"],
-  "AWS Backup": ["EC2","EBS","EKS","CloudFormation","RDS","Aurora","DynamoDB","EFS","FSx","Neptune","DocumentDB","Storage Gateway","S3","S3 Glacier","Redshift","Timestream"],
-  "RDS": ["EC2","VPC","ElastiCache","S3","CloudWatch","Secrets Manager","AWS Backup","Aurora","Security Groups","Subnets"],
-  "Aurora": ["RDS","Lambda","S3","CloudWatch","Redshift","AWS Backup"],
-  "DynamoDB": ["DynamoDB Streams","Kinesis Data Streams","Lambda","API Gateway","S3","IAM","AWS Backup","OpenSearch Service"],
-  "DynamoDB Streams": ["DynamoDB","Lambda","EventBridge"],
-  "ElastiCache": ["RDS","Aurora","DynamoDB","EC2","Lambda","MemoryDB"],
-  "MemoryDB": ["EC2","Lambda","VPC","ElastiCache"],
-  "Redshift": ["S3","Glue","QuickSight","Kinesis","Kinesis Data Streams","Aurora","Database Migration Service","SageMaker","AWS Backup"],
-  "Neptune": ["Lambda","S3","AWS Backup","Database Migration Service"],
-  "DocumentDB": ["EC2","Lambda","S3","AWS Backup","Database Migration Service"],
+  "AWS Transfer Family": ["S3","EFS","CloudWatch"],
+  "S3 Transfer Acceleration": ["S3"],
+  "AWS Backup": ["EC2","EBS","EKS","RDS","Aurora","DynamoDB","EFS","FSx","Neptune","DocumentDB","Storage Gateway","S3","S3 Glacier","Redshift","Timestream"],
+  "RDS": ["ElastiCache","S3","CloudWatch","Aurora","QuickSight","GuardDuty"],
+  "Aurora": ["Lambda","S3","CloudWatch","Redshift","QuickSight","GuardDuty","ElastiCache"],
+  "DynamoDB": ["DynamoDB Streams","Kinesis Data Streams","S3","OpenSearch Service","ElastiCache"],
+  "DynamoDB Streams": ["Lambda","EventBridge"],
+  "ElastiCache": ["MemoryDB"],
+  "MemoryDB": ["VPC"],
+  "Redshift": ["QuickSight","SageMaker"],
+  "Neptune": [],
+  "DocumentDB": ["S3"],
   "Database Migration Service": ["RDS","Aurora","Redshift","DynamoDB","DocumentDB","Neptune","S3","VPC"],
-  "Timestream": ["Lambda","QuickSight","Kinesis","AWS Backup"],
+  "Timestream": ["QuickSight"],
   "Region": ["VPC","Route 53","CloudFront","Global Accelerator","S3"],
   "Availability Zone": ["Subnets","NAT Gateway","VPC"],
   "VPC": ["EC2","RDS","ELB","Route 53","Transit Gateway","VPC Endpoints","Direct Connect","VPN (Site-to-Site)","Subnets","Security Groups","Network ACL","NAT Gateway","Internet Gateway","Region"],
@@ -10658,58 +10658,58 @@ const SERVICE_CONNECTIONS = {
   "NAT Gateway": ["Subnets","VPC","VPC Endpoints"],
   "Internet Gateway": ["Subnets","VPC","ELB","EC2"],
   "Route 53": ["CloudFront","ELB","EC2","S3","Global Accelerator","VPC"],
-  "CloudFront": ["S3","ELB","API Gateway","Route 53","WAF","ACM","Lambda"],
-  "ELB": ["EC2","ECS","EKS","Auto Scaling","ACM","WAF","Global Accelerator","Security Groups","Subnets","Internet Gateway"],
-  "API Gateway": ["Lambda","VPC","Cognito","WAF","CloudFront","DynamoDB"],
-  "Direct Connect": ["VPC","Transit Gateway","VPN (Site-to-Site)"],
-  "Transit Gateway": ["VPC","Direct Connect","VPN (Site-to-Site)"],
-  "VPN (Site-to-Site)": ["VPC","Transit Gateway","Direct Connect"],
-  "VPC Endpoints": ["VPC","S3","DynamoDB","Secrets Manager","KMS","SNS","SQS","CloudWatch","Systems Manager","STS"],
-  "Global Accelerator": ["ELB","EC2","Route 53","Shield"],
-  "SQS": ["Lambda","SNS","EC2","EventBridge"],
-  "SNS": ["SQS","Lambda","EventBridge","CloudWatch","Kinesis Data Firehose"],
-  "EventBridge": ["Lambda","SQS","SNS","Step Functions","DynamoDB Streams","Kinesis Data Streams","Kinesis Data Firehose","MQ"],
-  "Step Functions": ["Lambda","SQS","SNS","DynamoDB","EventBridge"],
+  "CloudFront": ["S3","ELB","API Gateway","Lambda"],
+  "ELB": ["EC2","ECS","EKS"],
+  "API Gateway": ["Lambda","Cognito","DynamoDB","VPC"],
+  "Direct Connect": ["Transit Gateway","VPN (Site-to-Site)"],
+  "Transit Gateway": ["VPN (Site-to-Site)"],
+  "VPN (Site-to-Site)": [],
+  "VPC Endpoints": ["S3","DynamoDB","Secrets Manager","KMS","SNS","SQS","CloudWatch","Systems Manager","STS"],
+  "Global Accelerator": ["ELB","EC2"],
+  "SQS": ["Lambda","EC2"],
+  "SNS": ["SQS","Lambda","Kinesis Data Firehose"],
+  "EventBridge": ["Lambda","SQS","SNS","Step Functions","Kinesis Data Firehose","MQ"],
+  "Step Functions": ["Lambda","SQS","SNS","DynamoDB"],
   "AppSync": ["Lambda","DynamoDB","Cognito"],
-  "MQ": ["EC2","Lambda","VPC","EventBridge"],
-  "Athena": ["S3","Glue","QuickSight","Lake Formation"],
-  "EMR": ["S3","Glue","Redshift"],
-  "Kinesis": ["Lambda","S3","Redshift","OpenSearch Service"],
-  "Kinesis Data Streams": ["Lambda","S3","Redshift","OpenSearch Service","Kinesis Data Firehose","DynamoDB","EventBridge"],
-  "Kinesis Data Firehose": ["S3","Redshift","OpenSearch Service","Kinesis Data Streams","Glue","Lambda","SNS","EventBridge"],
-  "Glue": ["S3","Athena","Redshift","Lake Formation","EMR"],
-  "QuickSight": ["Redshift","Athena","S3","RDS","Aurora"],
-  "Lake Formation": ["S3","Glue","Athena"],
-  "OpenSearch Service": ["Kinesis Data Firehose","Kinesis","Lambda","CloudWatch","S3","DynamoDB"],
-  "SageMaker": ["S3","Lambda","CloudWatch","Fraud Detector"],
-  "Rekognition": ["S3","Lambda","SNS"],
-  "Textract": ["S3","Lambda","SNS"],
-  "Comprehend": ["S3","Lambda"],
-  "Transcribe": ["S3","Translate","Lambda","EventBridge"],
-  "Translate": ["Transcribe","Lambda","S3"],
+  "MQ": ["Lambda","VPC"],
+  "Athena": ["QuickSight"],
+  "EMR": ["Redshift"],
+  "Kinesis": ["Lambda","Timestream"],
+  "Kinesis Data Streams": ["Lambda","Kinesis Data Firehose","EventBridge"],
+  "Kinesis Data Firehose": ["S3","Redshift","OpenSearch Service","Lambda"],
+  "Glue": ["Athena","Redshift","Lake Formation","EMR","Kinesis Data Firehose"],
+  "QuickSight": [],
+  "Lake Formation": ["S3","Athena"],
+  "OpenSearch Service": ["CloudWatch","S3"],
+  "SageMaker": ["S3","CloudWatch","Fraud Detector","GuardDuty"],
+  "Rekognition": ["SNS"],
+  "Textract": ["SNS"],
+  "Comprehend": [],
+  "Transcribe": ["Translate","EventBridge"],
+  "Translate": ["S3"],
   "Lex": ["Lambda","Polly"],
-  "Polly": ["Lex","S3"],
-  "Forecast": ["S3","QuickSight"],
-  "Kendra": ["S3","Lambda"],
-  "Fraud Detector": ["S3","Lambda","SageMaker"],
-  "IAM": ["STS","Organizations","EC2","Lambda","KMS","AWS Transfer Family"],
-  "Organizations": ["IAM","Control Tower","CloudTrail","STS"],
-  "KMS": ["S3","EBS","RDS","Secrets Manager","Lambda","Systems Manager","VPC Endpoints"],
-  "Secrets Manager": ["RDS","Lambda","KMS","VPC Endpoints"],
-  "Cognito": ["API Gateway","AppSync","IAM"],
-  "GuardDuty": ["Security Hub","CloudTrail","VPC","S3","EKS","EBS","RDS","Aurora","Lambda","SageMaker"],
-  "Security Hub": ["GuardDuty","Config","Macie"],
+  "Polly": ["S3"],
+  "Forecast": ["QuickSight"],
+  "Kendra": [],
+  "Fraud Detector": [],
+  "IAM": ["EC2","Lambda","KMS","AWS Transfer Family","STS","EKS","DynamoDB"],
+  "Organizations": ["IAM","CloudTrail","STS"],
+  "KMS": ["S3","EBS","RDS","Secrets Manager","Lambda","Systems Manager"],
+  "Secrets Manager": ["RDS","Lambda"],
+  "Cognito": ["IAM","STS"],
+  "GuardDuty": ["Security Hub","VPC"],
+  "Security Hub": [],
   "Shield": ["CloudFront","ELB","Route 53","EC2","Global Accelerator","WAF"],
-  "WAF": ["CloudFront","ELB","API Gateway","Shield"],
-  "Macie": ["S3","Security Hub"],
+  "WAF": ["CloudFront","ELB","API Gateway"],
+  "Macie": ["Security Hub"],
   "ACM": ["CloudFront","ELB","API Gateway"],
-  "STS": ["IAM","Cognito","Organizations"],
-  "CloudWatch": ["EC2","Lambda","Auto Scaling","SNS","RDS","AWS Transfer Family"],
+  "STS": [],
+  "CloudWatch": ["SNS"],
   "CloudTrail": ["S3","CloudWatch","GuardDuty","Config","SNS","EventBridge"],
-  "Config": ["CloudTrail","Security Hub","Lambda","SNS","S3","Control Tower"],
-  "CloudFormation": ["EC2","IAM","S3","Lambda","Service Catalog"],
+  "Config": ["Security Hub","Lambda","SNS","S3"],
+  "CloudFormation": ["EC2","IAM","S3","Lambda"],
   "Trusted Advisor": ["IAM","EC2","EventBridge"],
-  "Systems Manager": ["EC2","Secrets Manager","CloudWatch","KMS","IAM","S3","VPC Endpoints"],
+  "Systems Manager": ["EC2","Secrets Manager","CloudWatch","IAM","S3"],
   "Service Catalog": ["CloudFormation","IAM"],
   "Control Tower": ["Organizations","Config","CloudFormation"],
   "Compute Optimizer": ["EC2","EBS","Auto Scaling","Lambda"],
@@ -13745,10 +13745,39 @@ function sandboxSetFitAll(on){
 function sandboxRefreshZoom(){
   if(sandboxFitAll) sandboxFitAllToView(); else sandboxApplyZoom();
 }
+/* SERVICE_CONNECTIONS is now directional — SERVICE_CONNECTIONS[X] lists what X's data/requests
+   flow TO (e.g. "Kinesis Data Streams" lists "Kinesis Data Firehose", never the reverse), matching
+   real AWS architecture semantics (source -> destination) instead of a symmetric "these two are
+   related" adjacency. A link's [from, to] order controls the arrowhead drawn in sandboxRenderLinks,
+   so auto-created links must be oriented by this canonical direction — NOT by which node happened
+   to be clicked first — or the arrow silently points backwards depending on click order. Falls
+   back to click order only for a pair with no documented direction either way (rare; usually a
+   peer/container relationship where direction isn't meaningful and no arrow will show anyway). */
+/* "Commonly connects to" UI (hold-menu suggestions, highlighted pills, info-panel chips) should
+   surface a service either DOWNSTREAM or UPSTREAM of the selected one — e.g. hovering "S3 Glacier"
+   (whose only role in the now-directional SERVICE_CONNECTIONS is as a target: "S3"/"AWS Backup"/
+   "Storage Gateway" all point TO it) should still suggest those, not show zero suggestions just
+   because S3 Glacier's own outgoing list is empty. Only sandboxAddLink/sandboxCanonicalOrder read
+   SERVICE_CONNECTIONS[name] one-directionally on purpose, to determine which way the arrow goes;
+   every other "what relates to this" UI should call this instead. */
+function sandboxRelatedServices(name){
+  const outgoing = SERVICE_CONNECTIONS[name] || [];
+  const incoming = Object.keys(SERVICE_CONNECTIONS).filter(k => SERVICE_CONNECTIONS[k].includes(name));
+  return [...new Set([...outgoing, ...incoming])];
+}
+function sandboxCanonicalOrder(a, b){
+  const na = sandboxNodeById(a), nb = sandboxNodeById(b);
+  if(!na || !nb) return [a, b];
+  const aToB = (SERVICE_CONNECTIONS[na.name] || []).includes(nb.name);
+  const bToA = (SERVICE_CONNECTIONS[nb.name] || []).includes(na.name);
+  if(aToB && !bToA) return [a, b];
+  if(bToA && !aToB) return [b, a];
+  return [a, b];
+}
 function sandboxAddLink(a, b){
   if(a===b) return;
   const exists = sandboxLinks.some(([x,y]) => (x===a && y===b) || (x===b && y===a));
-  if(!exists) sandboxLinks.push([a,b]);
+  if(!exists) sandboxLinks.push(sandboxCanonicalOrder(a, b));
 }
 function sandboxNodeById(id){ return sandboxNodes.find(n=>n.id===id); }
 function sandboxIsContainerNode(id){
@@ -13909,23 +13938,49 @@ function sandboxRenderLinks(){
   const h = Math.max(1, parseInt(canvas.style.height) || canvas.clientHeight || 600);
   svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
   svg.innerHTML = "";
+  // Arrowhead marker: [a,b] in sandboxLinks means "a's data/requests flow to b" (oriented by
+  // sandboxAddLink via SERVICE_CONNECTIONS' now-directional data, or the flip button), so every
+  // link gets a visible direction instead of rendering as a plain undirected line — that was the
+  // actual complaint (an undirected line makes "Firehose->S3" and "Firehose->Kinesis Data Streams"
+  // look equally valid when only one direction is architecturally real).
+  const defs = document.createElementNS("http://www.w3.org/2000/svg","defs");
+  const marker = document.createElementNS("http://www.w3.org/2000/svg","marker");
+  marker.setAttribute("id","sandboxArrowhead");
+  marker.setAttribute("viewBox","0 0 10 10");
+  marker.setAttribute("refX","8"); marker.setAttribute("refY","5");
+  marker.setAttribute("markerWidth","7"); marker.setAttribute("markerHeight","7");
+  marker.setAttribute("orient","auto-start-reverse");
+  const arrowPath = document.createElementNS("http://www.w3.org/2000/svg","path");
+  arrowPath.setAttribute("d","M0,0 L10,5 L0,10 Z");
+  arrowPath.style.fill = "var(--accent)";
+  marker.appendChild(arrowPath);
+  defs.appendChild(marker);
+  svg.appendChild(defs);
   sandboxLinks.forEach(([a,b])=>{
     if(sandboxIsContainerLink(a,b)) return;
     const na = sandboxNodes.find(n=>n.id===a);
     const nb = sandboxNodes.find(n=>n.id===b);
     if(!na || !nb) return;
+    // Pull the arrow's tip back off the target node's center so the arrowhead lands just outside
+    // the node box instead of hidden underneath its icon/label.
+    const dx = nb.x-na.x, dy = nb.y-na.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    const pullback = Math.min(45, dist*0.4);
+    const ex = nb.x - (dx/dist)*pullback;
+    const ey = nb.y - (dy/dist)*pullback;
     const line = document.createElementNS("http://www.w3.org/2000/svg","line");
     line.setAttribute("x1", na.x); line.setAttribute("y1", na.y);
-    line.setAttribute("x2", nb.x); line.setAttribute("y2", nb.y);
+    line.setAttribute("x2", ex); line.setAttribute("y2", ey);
     line.setAttribute("stroke-width", "2");
     line.style.stroke = "var(--accent)";
+    line.setAttribute("marker-end", "url(#sandboxArrowhead)");
     svg.appendChild(line);
   });
 }
 function sandboxApplyHighlights(){
   const board = sandboxGetBoard();
   const selNode = sandboxSelectedName ? sandboxNodeById(sandboxSelectedName) : null;
-  const connections = selNode ? (SERVICE_CONNECTIONS[selNode.name] || []) : [];
+  const connections = selNode ? sandboxRelatedServices(selNode.name) : [];
   if(board){
     board.querySelectorAll(".sandbox-node").forEach(el=>{
       const id = el.dataset.id;
@@ -13950,7 +14005,7 @@ function sandboxRenderInfoPanel(){
     return;
   }
   const meta = sandboxFindServiceMeta(selNodeForInfo.name);
-  const connections = SERVICE_CONNECTIONS[selNodeForInfo.name] || [];
+  const connections = sandboxRelatedServices(selNodeForInfo.name);
   const factsHtml = meta ? `<ul>${(meta.svc.f||[]).map(f=>`<li>${f}</li>`).join("")}</ul>` : "";
   const ucHtml = meta && meta.svc.uc ? `<div>${meta.svc.uc}</div>` : "";
   const selVariantLabel = sandboxVariantLabel(selNodeForInfo);
@@ -14372,7 +14427,7 @@ function sandboxCloseHoldMenu(){
 function sandboxOpenHoldMenu(node, clientX, clientY){
   sandboxCloseContextMenu();
   sandboxCloseHoldMenu();
-  const connections = SERVICE_CONNECTIONS[node.name] || [];
+  const connections = sandboxRelatedServices(node.name);
   if(!connections.length) return;
   const menu = document.createElement("div");
   menu.className = "sandbox-context-menu";
