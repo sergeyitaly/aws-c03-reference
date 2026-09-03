@@ -1551,8 +1551,8 @@ const MUSIC_PRESETS = {
          261.63,329.63,392.00,329.63, 196.00,246.94,293.66,246.94],
     noteDur:0.55, noteGap:0.42},
 };
-let currentPreset = "pentatonic";
-try{ currentPreset = localStorage.getItem("saa-music-preset") || "pentatonic"; }catch(e){}
+let currentPreset = "off";
+try{ currentPreset = localStorage.getItem("saa-music-preset") || "off"; }catch(e){}
 let ambientNodes = [];
 
 function scheduleNotePreset(cfg){
