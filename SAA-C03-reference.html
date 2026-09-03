@@ -606,6 +606,7 @@ mark{ background:var(--accent-3); color:#1a1a2e; padding:0 2px; border-radius:3p
   font-size:12.5px; font-weight:700; cursor:pointer; user-select:none; box-shadow:var(--shadow);
   white-space:nowrap; z-index:2; touch-action:none;
 }
+.sandbox-node.sandbox-node-orphan{ opacity:.65; border-style:dashed; box-shadow:0 0 0 2px #D97706; }
 .sandbox-node.sandbox-node-selected{ box-shadow:0 0 0 3px var(--accent); }
 .sandbox-node.sandbox-node-suggested{ box-shadow:0 0 0 3px #16A34A; }
 .sandbox-node-dot{ width:9px; height:9px; border-radius:50%; flex-shrink:0; }
@@ -736,6 +737,7 @@ mark{ background:var(--accent-3); color:#1a1a2e; padding:0 2px; border-radius:3p
 .svc-radial-tooltip ul{ margin:0 0 8px; padding-left:16px; }
 .svc-radial-tooltip li{ margin-bottom:3px; }
 .svc-tooltip-uc{ padding-top:7px; border-top:1px solid var(--border); color:var(--text-dim); }
+.sandbox-orphan-hint{ color:#D97706; font-size:11px; font-weight:700; margin:2px 0 7px; }
 .svc-tooltip-uc b{ color:var(--text); }
 .svc-tooltip-doclink{ margin-top:7px; font-size:11px; font-weight:700; color:var(--accent); }
 
@@ -1101,6 +1103,7 @@ const UI_STRINGS = {
   sandboxWorkflowEmpty: {en:"Place services on the board to see a generated description of the workflow here.", uk:"Розмісти сервіси на дошці, щоб тут з'явився опис робочого процесу."},
   sandboxWorkflowNoLinks: {en:"No connections yet — connect services to describe the flow between them.", uk:"Ще немає з'єднань — з'єднай сервіси, щоб описати потік між ними."},
   sandboxWorkflowStandalone: {en:"Also on the board (not yet connected):", uk:"Також на дошці (ще не з'єднано):"},
+  sandboxOrphanHint: {en:"⚠ Not connected to anything yet — link it or group it into a container", uk:"⚠ Ще ні з чим не з'єднано — з'єднайте або додайте в контейнер"},
   sandboxWorkflowContains: {en:"contains:", uk:"містить:"},
   sandboxWorkflowDocLink: {en:"Explain this architecture in AWS Docs ↗", uk:"Пояснити цю архітектуру в документації AWS ↗"},
   sandboxArchMatchTitle: {en:"Closest AWS Reference Architecture", uk:"Найближча еталонна архітектура AWS"},
@@ -13981,12 +13984,14 @@ function sandboxApplyHighlights(){
   const board = sandboxGetBoard();
   const selNode = sandboxSelectedName ? sandboxNodeById(sandboxSelectedName) : null;
   const connections = selNode ? sandboxRelatedServices(selNode.name) : [];
+  const orphanIds = sandboxOrphanNodeIds();
   if(board){
     board.querySelectorAll(".sandbox-node").forEach(el=>{
       const id = el.dataset.id;
       const name = el.dataset.service;
       el.classList.toggle("sandbox-node-selected", id===sandboxSelectedName);
       el.classList.toggle("sandbox-node-suggested", id!==sandboxSelectedName && connections.includes(name));
+      el.classList.toggle("sandbox-node-orphan", orphanIds.has(id));
     });
   }
   document.querySelectorAll(".sandbox-chip").forEach(chip=>{
@@ -14143,8 +14148,10 @@ function sandboxShowNodeTooltip(node){
   const factsHtml = meta ? `<ul>${(meta.svc.f||[]).map(f=>`<li>${f}</li>`).join("")}</ul>` : "";
   const ucHtml = meta && meta.svc.uc ? `<div class="svc-tooltip-uc"><b>${T("treeUseCaseLabel")}</b> ${meta.svc.uc}</div>` : "";
   const icon = meta ? svcServiceIconSvg(node.name, meta.cat.color, 20) : "";
+  const orphanHtml = sandboxOrphanNodeIds().has(node.id) ? `<div class="sandbox-orphan-hint">${T("sandboxOrphanHint")}</div>` : "";
   tooltip.innerHTML = `
     <div class="svc-tooltip-title" style="color:${meta?meta.cat.color:"inherit"}">${icon?`<span class="svc-tooltip-icon">${icon}</span>`:""}${node.id}${variantLabel?` · ${variantLabel}`:""}</div>
+    ${orphanHtml}
     ${factsHtml}
     ${ucHtml}
   `;
@@ -14510,6 +14517,20 @@ function sandboxGroupLines(){
     return { owner: ownerNode, members: memberNodes };
   }).filter(Boolean);
 }
+/* A node counts as "orphan" if it isn't part of any real link (container-containment pairs don't
+   count as a link here — a Subnet enclosed in a VPC box isn't "disconnected") and isn't itself a
+   group owner or member. Shared by sandboxRenderWorkflow's "Standalone:" text line and the board's
+   own visual highlight, so the two can never disagree about which nodes count. */
+function sandboxOrphanNodeIds(){
+  const linkedOrGrouped = new Set();
+  sandboxLinks.forEach(([a,b])=>{
+    if(sandboxIsContainerLink(a,b)) return;
+    if(!sandboxNodeById(a) || !sandboxNodeById(b)) return;
+    linkedOrGrouped.add(a); linkedOrGrouped.add(b);
+  });
+  sandboxGroupLines().forEach(g=>{ linkedOrGrouped.add(g.owner.id); g.members.forEach(m=>linkedOrGrouped.add(m.id)); });
+  return new Set(sandboxNodes.filter(n=>!linkedOrGrouped.has(n.id)).map(n=>n.id));
+}
 function sandboxWorkflowQuery(){
   const linkParts = sandboxLinks.filter(([a,b])=>!sandboxIsContainerLink(a,b)).map(([a,b])=>{
     const na = sandboxNodeById(a);
@@ -14531,19 +14552,17 @@ function sandboxRenderWorkflow(){
     panel.innerHTML = `<div class="sandbox-workflow-title">${T("sandboxWorkflowTitle")}</div><div class="sandbox-empty-info">${T("sandboxWorkflowEmpty")}</div>`;
     return;
   }
-  const linkedNames = new Set();
   const steps = sandboxLinks.map((pair, idx)=>{
     const [a,b] = pair;
     if(sandboxIsContainerLink(a,b)) return null;
     const na = sandboxNodeById(a);
     const nb = sandboxNodeById(b);
     if(!na || !nb) return null;
-    linkedNames.add(a); linkedNames.add(b);
     return { idx, label: `${sandboxNodeLabel(na)} → ${sandboxNodeLabel(nb)}` };
   }).filter(Boolean);
   const groups = sandboxGroupLines();
-  groups.forEach(g=>{ linkedNames.add(g.owner.id); g.members.forEach(m=>linkedNames.add(m.id)); });
-  const standalone = sandboxNodes.filter(n=>!linkedNames.has(n.id)).map(sandboxNodeLabel);
+  const orphanIds = sandboxOrphanNodeIds();
+  const standalone = sandboxNodes.filter(n=>orphanIds.has(n.id)).map(sandboxNodeLabel);
   const stepsHtml = steps.length
     ? `<ul class="sandbox-workflow-steps">${steps.map(s=>`<li><span>${s.label}</span><button type="button" class="sandbox-flip-btn" data-idx="${s.idx}" title="${T("sandboxFlipHint")}">⇄</button><button type="button" class="sandbox-remove-link-btn" data-remove-idx="${s.idx}" title="${T("sandboxRemoveLinkHint")}">✕</button></li>`).join("")}</ul>`
     : `<div class="sandbox-empty-info">${T("sandboxWorkflowNoLinks")}</div>`;
