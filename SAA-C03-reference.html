@@ -37,6 +37,7 @@ body{
   font-size:15px; line-height:1.5;
 }
 .app{ display:flex; min-height:100vh; min-height:100svh; max-width:1400px; margin:0 auto; }
+.app.sidebar-hidden{ max-width:1432px; }
 
 /* ---- Sidebar / tabs ---- */
 .sidebar{
@@ -54,11 +55,10 @@ body{
 .sidebar-hide-btn{ display:flex; }
 .sidebar-hide-btn:hover, .sidebar-show-btn:hover{ color:var(--text); border-color:var(--accent); }
 .sidebar-show-btn{
-  display:none; position:fixed; top:20px; left:16px; z-index:5;
+  display:none; position:sticky; top:20px; align-self:flex-start; margin-right:6px;
 }
 .app.sidebar-hidden .sidebar{ display:none; }
 .app.sidebar-hidden .sidebar-show-btn{ display:flex; }
-.app.sidebar-hidden main{ padding-top:64px; }
 .searchbox{
   width:100%; padding:9px 12px; margin-bottom:14px; border-radius:10px;
   border:1px solid var(--border); background:var(--bg-panel); color:var(--text);
