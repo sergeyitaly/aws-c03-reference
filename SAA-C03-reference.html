@@ -10424,6 +10424,7 @@ const GLYPH_LIB = {
  subnet: '<rect x="3" y="5" width="18" height="14" rx="1.4" fill="none" stroke="white" stroke-width="1.4"/><path d="M11 5v14M3 12h8" stroke="white" stroke-width="1.2"/><circle cx="7" cy="8.5" r="1" fill="white"/><circle cx="16" cy="8.5" r="1" fill="white"/><circle cx="16" cy="15.5" r="1" fill="white"/>',
  region: '<circle cx="12" cy="12" r="8.5" fill="none" stroke="white" stroke-width="1.4"/><path d="M3.5 12h17M12 3.5c2.8 2.8 2.8 14.2 0 17M12 3.5c-2.8 2.8-2.8 14.2 0 17M4.8 7.5h14.4M4.8 16.5h14.4" stroke="white" stroke-width="1.1" fill="none"/>',
  az: '<rect x="5" y="4" width="14" height="16" rx="1.2" fill="none" stroke="white" stroke-width="1.4"/><path d="M8 8h2M14 8h2M8 12.5h2M14 12.5h2M8 17h2M14 17h2" stroke="white" stroke-width="1.4" stroke-linecap="round"/>',
+ onprem: '<path d="M4 10 L9 5 L14 10" fill="none" stroke="white" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/><rect x="5" y="10" width="8" height="8.5" fill="none" stroke="white" stroke-width="1.3"/><rect x="8" y="14.5" width="2" height="4" fill="white"/><path d="M15 9 L20 4 M20 4 L20 7.3 M20 4 L16.7 4" fill="none" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>',
 };
 /* Ordered match rules: [pattern, glyph key]. First match wins. A card whose
    title doesn't match any rule falls back to its section's own icon. */
@@ -10474,7 +10475,7 @@ const SERVICE_ICON_MAP = {
   "RDS":"databases", "Aurora":"aurora", "DynamoDB":"dynamodb", "DynamoDB Streams":"dynamodbstreams",
   "ElastiCache":"elasticache", "Redshift":"redshift", "Neptune":"neptune", "DocumentDB":"documentdb",
   "Database Migration Service":"dms", "Timestream":"timestream", "MemoryDB":"memorydb",
-  "Region":"region", "Availability Zone":"az",
+  "On-Premises":"onprem", "Region":"region", "Availability Zone":"az",
   "VPC":"vpc", "Subnets":"subnet", "Security Groups":"securitygroup", "Network ACL":"nacl", "NAT Gateway":"natgateway", "Internet Gateway":"igw",
   "Route 53":"route53", "CloudFront":"cdn", "ELB":"elb-asg", "API Gateway":"apigateway",
   "Direct Connect":"directconnect", "Transit Gateway":"transitgateway", "VPN (Site-to-Site)":"vpnst",
@@ -10560,6 +10561,7 @@ const RADIAL_CATEGORIES = [
     { n:"Timestream", f:["Managed time-series database","IoT/metrics workloads with time-based queries","Automatically tiers recent data (memory) vs historical data (magnetic) for cost"], uc:"Use for IoT sensor data or app/infra metrics where queries are mostly time-range based." },
   ]},
   { name:"Networking & Content Delivery", color:"#8C4FFF", services:[
+    { n:"On-Premises", f:["Your own data center — not an AWS service, but the other end of every hybrid architecture","Reaches AWS over Direct Connect (dedicated line, not encrypted by default) or Site-to-Site VPN (IPsec over the internet)","Runs the agents/appliances that push or sync data into AWS — a DataSync agent, a Storage Gateway appliance, or an on-prem database DMS migrates from"], uc:"Use to anchor a hybrid diagram — everything that starts in your own data center before reaching AWS via Direct Connect, VPN, DataSync, Storage Gateway, or DMS." },
     { n:"Region", f:["An isolated geographic area containing multiple Availability Zones","A VPC lives in exactly one Region; most resources don't cross Regions on their own","Cross-Region needs an explicit mechanism — replication, Global Accelerator, Route 53 failover, etc."], uc:"Use to model where a whole deployment lives, or to show a multi-Region / DR architecture spanning more than one." },
     { n:"Availability Zone", f:["One or more discrete data centers with redundant power/networking inside a Region","An isolated failure domain, but low-latency-linked to other AZs in the same Region","A VPC is Region-wide; only its Subnets (and AZ-scoped resources like NAT Gateway) are pinned to a specific AZ"], uc:"Use to show which AZ a Subnet (and the resources in it) sits in, or to illustrate a Multi-AZ high-availability layout." },
     { n:"VPC", f:["Your isolated virtual network","Subnets, route tables, NACLs, security groups","Security Groups = stateful, instance-level; NACLs = stateless, subnet-level"], uc:"Use as the network foundation for every AWS deployment — segment public/private subnets per tier." },
@@ -10660,6 +10662,7 @@ const RADIAL_DOC_URLS = {
   "Redshift":"https://aws.amazon.com/redshift/", "Neptune":"https://aws.amazon.com/neptune/",
   "DocumentDB":"https://aws.amazon.com/documentdb/", "Database Migration Service":"https://aws.amazon.com/dms/",
   "Timestream":"https://aws.amazon.com/timestream/",
+  "On-Premises":"https://aws.amazon.com/hybrid/",
   "Region":"https://aws.amazon.com/about-aws/global-infrastructure/regions_az/",
   "Availability Zone":"https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.RegionsAndAvailabilityZones.html",
   "VPC":"https://aws.amazon.com/vpc/",
@@ -10742,6 +10745,7 @@ const SERVICE_CONNECTIONS = {
   "DocumentDB": ["S3"],
   "Database Migration Service": ["RDS","Aurora","Redshift","DynamoDB","DocumentDB","Neptune","S3","VPC"],
   "Timestream": ["QuickSight"],
+  "On-Premises": ["Direct Connect","VPN (Site-to-Site)","DataSync","Storage Gateway","Database Migration Service"],
   "Region": ["VPC","Route 53","CloudFront","Global Accelerator","S3"],
   "Availability Zone": ["Subnets","NAT Gateway","VPC"],
   "VPC": ["EC2","RDS","ELB","Route 53","Transit Gateway","VPC Endpoints","Direct Connect","VPN (Site-to-Site)","Subnets","Security Groups","Network ACL","NAT Gateway","Internet Gateway","Region"],
@@ -14732,7 +14736,7 @@ const SANDBOX_ARCH_PATTERNS = [
     services:["ECS","EKS","Fargate","ELB","RDS","DynamoDB"],
     blurb:{en:"Independently deployable services running as containers behind a load balancer.", uk:"Незалежно розгортані сервіси, що працюють як контейнери за балансувальником."} },
   { id:"hybrid-network", title:{en:"Hybrid Networking", uk:"Гібридна мережа"},
-    services:["VPC","Direct Connect","VPN (Site-to-Site)","Transit Gateway","VPC Endpoints","Region"],
+    services:["On-Premises","VPC","Direct Connect","VPN (Site-to-Site)","Transit Gateway","VPC Endpoints","Region"],
     blurb:{en:"On-premises data centers connected to AWS VPCs over private or encrypted links, reaching AWS services privately through VPC endpoints across Regions.", uk:"Локальні дата-центри, з'єднані з VPC AWS через приватні або шифровані канали, з приватним доступом до сервісів AWS через VPC endpoints у різних регіонах."} },
   { id:"landing-zone", title:{en:"Multi-Account Governance / Landing Zone", uk:"Багатоакаунтне управління / Landing Zone"},
     services:["Organizations","Control Tower","IAM","Config"],
@@ -14777,8 +14781,8 @@ const SANDBOX_ARCH_PATTERNS = [
     services:["S3","Textract","Lambda","DynamoDB"],
     blurb:{en:"Uploaded documents are text-extracted by Textract and the structured results stored in DynamoDB for downstream use.", uk:"Завантажені документи розпізнаються через Textract, а структуровані результати зберігаються в DynamoDB для подальшого використання."} },
   { id:"database-migration", title:{en:"Database Migration to AWS", uk:"Міграція бази даних до AWS"},
-    services:["Database Migration Service","RDS","Aurora","S3"],
-    blurb:{en:"DMS replicates from an on-premises or legacy database into RDS/Aurora with minimal downtime, using S3 as an optional staging area.", uk:"DMS реплікує дані з локальної чи застарілої бази в RDS/Aurora з мінімальним простоєм, використовуючи S3 як опціональну проміжну область."} },
+    services:["On-Premises","Direct Connect","Database Migration Service","RDS","Aurora","S3"],
+    blurb:{en:"DMS replicates from an on-premises database, reached over Direct Connect, into RDS/Aurora with minimal downtime, using S3 as an optional staging area.", uk:"DMS реплікує дані з локальної бази, доступної через Direct Connect, в RDS/Aurora з мінімальним простоєм, використовуючи S3 як опціональну проміжну область."} },
   { id:"global-cdn-security", title:{en:"Secured Global Content Delivery", uk:"Захищена глобальна доставка контенту"},
     services:["CloudFront","S3","Route 53","WAF","Global Accelerator"],
     blurb:{en:"CloudFront and Global Accelerator serve content from the edge while WAF filters malicious requests before they reach the origin.", uk:"CloudFront і Global Accelerator обслуговують контент з edge-локацій, а WAF фільтрує шкідливі запити до того, як вони досягнуть origin."} },
@@ -14843,8 +14847,8 @@ const SANDBOX_ARCH_PATTERNS = [
     services:["Service Catalog","CloudFormation","IAM"],
     blurb:{en:"Admins publish approved CloudFormation templates as a catalog; IAM-permissioned end users launch only pre-vetted, compliant products for themselves.", uk:"Адміністратори публікують схвалені шаблони CloudFormation як каталог; кінцеві користувачі з правами IAM самостійно запускають лише перевірені, відповідні продукти."} },
   { id:"on-prem-data-sync", title:{en:"On-Premises to Cloud Data Sync", uk:"Синхронізація даних з локальної інфраструктури в хмару"},
-    services:["DataSync","S3","EFS","FSx"],
-    blurb:{en:"A DataSync agent on-premises transfers files directly into S3, EFS, or FSx on a schedule or one-time run — no S3/Lambda relay hop to write or maintain.", uk:"Агент DataSync на локальній інфраструктурі передає файли безпосередньо в S3, EFS чи FSx за розкладом або одноразово — без потреби писати чи підтримувати проміжний перехід через S3/Lambda."} },
+    services:["On-Premises","Direct Connect","DataSync","S3","EFS","FSx"],
+    blurb:{en:"A DataSync agent running on-premises reaches AWS over Direct Connect and transfers files directly into S3, EFS, or FSx on a schedule or one-time run — no S3/Lambda relay hop to write or maintain.", uk:"Агент DataSync, що працює на локальній інфраструктурі, сягає AWS через Direct Connect і передає файли безпосередньо в S3, EFS чи FSx за розкладом або одноразово — без потреби писати чи підтримувати проміжний перехід через S3/Lambda."} },
 ];
 function sandboxMatchArchPatterns(){
   const names = new Set(sandboxNodes.map(n=>n.name));
