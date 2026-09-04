@@ -1,6 +1,6 @@
 ---
 name: manage-saa-c03-reference
-description: How to safely extend and maintain SAA-C03-reference.html — a single-file bilingual (EN/UK) AWS SAA-C03 exam-prep artifact with flashcards, a 100-question quiz, two architecture games, a Sorting Rush drag-and-drop game, and a free-form Sandbox architecture board (95-service catalog, real-connection-only linking, VPC/Subnet grouping, undo/redo, and a 27-pattern curated reference-architecture library). Use this whenever adding/editing content in that file (new quiz questions, flashcards, falling items, glossary entries, sandbox services, architecture patterns), before publishing it as a Claude Artifact, or when auditing it for out-of-scope AWS services or EN/UK drift.
+description: How to safely extend and maintain SAA-C03-reference.html — a single-file bilingual (EN/UK) AWS SAA-C03 exam-prep artifact with flashcards, a 100-question quiz, two architecture games, a Sorting Rush drag-and-drop game, and a free-form Sandbox architecture board (98-service catalog, real-connection-only linking, VPC/Subnet grouping, undo/redo, and a 47-pattern curated reference-architecture library covering every catalog service). Use this whenever adding/editing content in that file (new quiz questions, flashcards, falling items, glossary entries, sandbox services, architecture patterns), before publishing it as a Claude Artifact, or when auditing it for out-of-scope AWS services or EN/UK drift.
 ---
 
 # Managing SAA-C03-reference.html
@@ -241,12 +241,46 @@ an entry in `RADIAL_CATEGORIES` (under the right category, with `n`/`f`/
 `uc`), a hand-drawn glyph in `GLYPH_LIB` (never a copy of the real AWS
 icon — see the IP note below), an entry in `SERVICE_ICON_MAP`, a verified
 doc URL in `RADIAL_DOC_URLS`, and its real pairings added to
-`SERVICE_CONNECTIONS` (both directions get checked — `sandboxIsValidConnection`
-looks at `SERVICE_CONNECTIONS[a].includes(b) || SERVICE_CONNECTIONS[b].includes(a)`,
-but add the relationship on whichever side reads more naturally and add
-the *other* service to its own array too if the pairing is genuinely
-mutual). Missing any of these doesn't crash — it just makes the service
-placeable-but-broken (no icon, unlinkable, or absent from the catalog).
+`SERVICE_CONNECTIONS`. Missing any of these doesn't crash — it just makes
+the service placeable-but-broken (no icon, unlinkable, or absent from the
+catalog).
+
+**`SERVICE_CONNECTIONS` is directional, not symmetric — `X`'s array
+lists what `X`'s data/requests flow TO, never the reverse.** This was a
+real bug, not a design choice from day one: it used to be a symmetric
+adjacency list, so a link's on-board arrow direction depended on which
+node the user happened to click *first* rather than which way data
+actually flows — "Kinesis Data Firehose" clicked before "Kinesis Data
+Streams" baked in a backwards `Firehose → Streams` arrow, when the real
+flow is `Streams → Firehose`. When adding a new service's pairings,
+decide the real direction (who initiates / where the data actually
+goes) and put the edge on **only** the source's side — do not also add
+the reverse to the target's side "for symmetry"; that reintroduces the
+exact ambiguity this was fixed to remove. `sandboxIsValidConnection`
+still checks both directions for plain yes/no validity
+(`SERVICE_CONNECTIONS[a].includes(b) || SERVICE_CONNECTIONS[b].includes(a)`),
+but `sandboxAddLink` → `sandboxCanonicalOrder` uses the *one-sided*
+lookup to orient the actual arrow, and `sandboxRenderLinks` now draws a
+real arrowhead (`marker-end`, defined fresh each render since the SVG's
+`innerHTML` is cleared) — direction used to only be visible in the
+text-based Workflow panel's `A → B` labels, never on the board itself.
+The flip button (⇄, in the Workflow panel) still manually reverses one
+link's `[a,b]` order for the rare case the canonical direction is wrong
+for a specific diagram.
+
+A service that's purely a *destination* (e.g. `S3 Glacier`, `Security
+Hub`, `QuickSight`) legitimately has an **empty** `SERVICE_CONNECTIONS`
+array of its own — nothing flows *out* of an archive tier or a
+dashboard. Don't "fix" an empty array by adding reverse edges; that's
+correct, not a gap. But the "commonly connects to" UI (hold-menu
+suggestions, the info panel's pills, `sandboxApplyHighlights`) needs to
+show suggestions from **both** directions or a pure-destination service
+would wrongly show zero — that's what `sandboxRelatedServices(name)`
+is for (unions `SERVICE_CONNECTIONS[name]` with every key whose own
+array includes `name`). Those three UI call sites use
+`sandboxRelatedServices`, never a raw `SERVICE_CONNECTIONS[name]` — if
+you add a fourth "show related services" surface, use it too, or a
+target-only service will look connection-less there by mistake.
 **`SERVICE_ICON_MAP`'s value isn't always a `GLYPH_LIB` key directly** —
 `svcServiceGlyph` checks `ICON_META[key]` (the per-*section* badge icons,
 keyed by section id like `"ec2-fund"`) first and only falls back to
@@ -300,13 +334,39 @@ used. The context menu itself has no delete item — only the variant/group
 checklists and Park — since Park already covers "get it off the board"
 without the destructive, no-variants-remembered downside of deleting it.
 
-**Only documented pairs can link.** Clicking two unrelated services
-selects the second one instead of drawing a connection — this was a
-deliberate fix (previously any two nodes clicked in sequence would link
-regardless of whether the pairing made architectural sense). If you add a
-new service or pattern and find yourself unable to connect two nodes that
-plausibly *should* connect, the fix is almost always a missing
-`SERVICE_CONNECTIONS` entry, not a bug in the linking logic.
+**Only documented pairs can link, and the arrow always points the
+canonical way regardless of click order.** Clicking two unrelated
+services selects the second one instead of drawing a connection
+(deliberate — previously any two nodes clicked in sequence would link
+regardless of whether the pairing made architectural sense). If you add
+a new service or pattern and find yourself unable to connect two nodes
+that plausibly *should* connect, the fix is almost always a missing
+`SERVICE_CONNECTIONS` entry, not a bug in the linking logic. If the link
+draws but the **arrow points the wrong way**, the fix is in
+`SERVICE_CONNECTIONS` too — the edge is on the wrong side (see the
+directional-data note above) — not in `sandboxAddLink`/
+`sandboxCanonicalOrder`, which just reads whatever direction the data
+says.
+
+**Two different 3-second hold-menus exist — don't conflate them.**
+Holding a **placed board node** opens `sandboxOpenHoldMenu` ("commonly
+connects to", built from `sandboxRelatedServices`, click adds+links
+that service to the board). Holding a **palette chip** (not yet placed)
+opens `sandboxOpenArchHoldMenu` ("used in these reference
+architectures", built by filtering `SANDBOX_ARCH_PATTERNS.services`,
+click calls `sandboxLoadArchitecture` and replaces the whole board).
+Different trigger element, different data source, different click
+action — but both reuse the same `sandboxHoldMenuEl`/
+`sandboxCloseHoldMenu` so only one popup is ever open regardless of
+which kind, and both live behind a plain `mouseenter`-starts/
+`mouseleave`-cancels 3000ms `setTimeout` (no reset on `mousemove` within
+the element — only entering/leaving toggles the timer). The palette
+version is wired **only** inside `sandboxWirePaletteChip`, not inside
+the shared `sandboxWireDraggableChip` itself — the info panel's
+"commonly connects to" pills (`.sandbox-connect-pill`) call
+`sandboxWireDraggableChip` directly and must **not** gain this behavior;
+if you ever refactor chip wiring, keep that separation intentional
+rather than "simplifying" it into one shared function.
 
 **Container types**: `SANDBOX_CONTAINER_TYPES =
 new Set(["Region","Availability Zone","VPC","Subnets"])` — four levels
@@ -336,8 +396,32 @@ contains, not the reverse. If you touch this sort, re-verify with the
 label `<text>` DOM order (later = painted on top), not just a visual
 guess.
 
+**Orphan-node highlight**: `sandboxOrphanNodeIds()` is the single source
+of truth for "this node isn't part of anything" (zero real links —
+container-containment pairs don't count — and not a group owner or
+member either), shared by the board's own dashed-amber visual highlight
+(`.sandbox-node-orphan`, applied in `sandboxApplyHighlights`), the hover
+tooltip's warning line, and the Workflow panel's "Also on the board"
+text — all three read the same Set so they can never disagree about
+which nodes count. This is deliberately the *only* "is this needed"
+judgment the Sandbox makes automatically. It does **not** try to flag a
+service as "redundant" just because an alternate path also exists on
+the board (e.g. Firehose feeding both S3 and a direct Streams→Redshift
+edge isn't wrong — Firehose might still be there for the S3 leg) — that
+kind of call depends on requirements the board has no way to know, and
+a wrong automatic "redundant" flag would be actively misleading study
+content. If a future ask wants that kind of detector, it needs a
+narrow, explicitly-scoped list of documented AWS "path A supersedes path
+B for use case X" pairs, not a generic heuristic.
+
 **The reference-architecture pattern library** (`SANDBOX_ARCH_PATTERNS`,
-27 entries as of the last major addition) is used two ways: **matching**
+47 entries as of the last major addition — every one of the 98 catalog
+services now appears in at least one pattern, closed by a 20-pattern
+sweep plus extending `three-tier`/`hybrid-network` to absorb the 8
+fine-grained VPC/networking primitives — Region, Availability Zone,
+Subnets, Security Groups, Network ACL, NAT Gateway, Internet Gateway,
+VPC Endpoints — that don't warrant standalone patterns of their own) is
+used two ways: **matching**
 (`sandboxMatchArchPatterns` scores the current board against every
 pattern by service-name overlap and shows the closest ones) and
 **loading** (`sandboxLoadArchitecture(patternId)` clears the board,
@@ -462,9 +546,9 @@ installed just for `jsdom` afterward — they don't belong in this repo.
   language), plus wiring into `ICON_META`/`badgeHTML` for its tab icon.
 - **New Sandbox service**: add to `RADIAL_CATEGORIES`, `GLYPH_LIB`,
   `SERVICE_ICON_MAP`, `RADIAL_DOC_URLS` (curl-verified), and
-  `SERVICE_CONNECTIONS` (real pairings, both sides) — see the Sandbox
-  section above; all five, every time, or the service is placeable but
-  broken.
+  `SERVICE_CONNECTIONS` (real pairings, **source's side only** — see the
+  directional-data note above) — all five, every time, or the service is
+  placeable but broken.
 - **New reference-architecture pattern**: add to `SANDBOX_ARCH_PATTERNS`
   (bilingual title/blurb, services that all resolve against
   `RADIAL_CATEGORIES`) and, if it's a genuinely canonical pattern, a
@@ -495,3 +579,8 @@ installed just for `jsdom` afterward — they don't belong in this repo.
   anything else that calls `sandboxSaveState()`) without checking whether
   it's already running inside a render/restore cycle — see the undo
   double-entry gotcha above.
+- Don't add a `SERVICE_CONNECTIONS` edge to *both* sides of a pair "to be
+  safe" or "for symmetry." Exactly one side should list the other — the
+  side that's the real source/initiator. Adding it to both silently
+  reintroduces the click-order-decides-the-arrow bug this data model was
+  specifically redesigned to eliminate.
