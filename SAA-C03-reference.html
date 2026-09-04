@@ -54,11 +54,11 @@ body{
 .sidebar-hide-btn{ display:flex; }
 .sidebar-hide-btn:hover, .sidebar-show-btn:hover{ color:var(--text); border-color:var(--accent); }
 .sidebar-show-btn{
-  display:none; position:sticky; top:20px; align-self:flex-start; margin-right:6px;
+  display:none; position:fixed; top:20px; left:16px; z-index:5;
 }
 .app.sidebar-hidden .sidebar{ display:none; }
 .app.sidebar-hidden .sidebar-show-btn{ display:flex; }
-.app.sidebar-hidden main{ max-width:1100px; margin:0 auto; }
+.app.sidebar-hidden main{ padding-top:64px; }
 .searchbox{
   width:100%; padding:9px 12px; margin-bottom:14px; border-radius:10px;
   border:1px solid var(--border); background:var(--bg-panel); color:var(--text);
@@ -891,7 +891,6 @@ footer.note{ margin-top:34px; font-size:12px; color:var(--text-dim); }
   /* Hide/show-panel is a desktop-width reading-space feature — mobile already stacks the sidebar
      above the content and has its own "Sections ▾" collapse for the nav list specifically. */
   .sidebar-hide-btn, .app.sidebar-hidden .sidebar-show-btn{ display:none; }
-  .app.sidebar-hidden main{ max-width:none; margin:0; }
 }
 </style>
 <script>
