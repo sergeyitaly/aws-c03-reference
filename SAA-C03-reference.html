@@ -1714,11 +1714,33 @@ function box(x,y,w,h,opts={}){
     fill:opts.fill||"var(--diagram-box)",
     stroke:opts.stroke||"var(--diagram-stroke)","stroke-width":opts.sw||2});
 }
+/* Splits a connector label into lines that fit maxWidth, so a long label wraps instead of
+   spilling its single line horizontally past the gap and over the neighboring boxes. Manually
+   authored line arrays (the same convention box labels already use) are passed through as-is. */
+function wrapArrowLabel(label, maxWidth){
+  if(Array.isArray(label)) return label;
+  const maxChars = Math.max(6, Math.floor(maxWidth / 5.6));
+  if(label.length <= maxChars) return [label];
+  const words = label.split(" ");
+  const lines = [];
+  let cur = "";
+  words.forEach(word=>{
+    const test = cur ? cur+" "+word : word;
+    if(test.length > maxChars && cur){ lines.push(cur); cur = word; }
+    else cur = test;
+  });
+  if(cur) lines.push(cur);
+  return lines;
+}
 function arrow(x1,y1,x2,y2,label){
   const g = el("g",{});
   g.appendChild(el("line",{x1,y1,x2,y2,stroke:"var(--diagram-arrow)","stroke-width":2,
     "marker-end":"url(#arrowhead)"}));
-  if(label) g.appendChild(txt((x1+x2)/2,(y1+y2)/2-8,label,{size:10.5}));
+  if(label){
+    const lines = wrapArrowLabel(label, Math.abs(x2-x1)-8);
+    const lineHeight = 12, baseY = (y1+y2)/2-8, startY = baseY-(lines.length-1)*lineHeight;
+    lines.forEach((line,i)=> g.appendChild(txt((x1+x2)/2, startY+i*lineHeight, line, {size:10.5})));
+  }
   return g;
 }
 function defsArrow(svg){
