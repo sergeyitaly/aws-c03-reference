@@ -44,7 +44,10 @@ body{
   width:260px; flex-shrink:0; padding:20px 12px; position:sticky; top:0;
   align-self:flex-start; max-height:100vh; max-height:100svh; overflow-y:auto;
 }
-.brand{ padding:8px 12px 18px; display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+/* Sticky within the SIDEBAR's own internal scroll (.sidebar has overflow-y:auto for a long tab
+   list), not the page scroll — without this, scrolling down through the tabs carries the hide
+   button (◂) up and out of view along with the rest of .brand's normal flow content. */
+.brand{ padding:8px 12px 18px; display:flex; align-items:flex-start; justify-content:space-between; gap:8px; position:sticky; top:0; z-index:2; background:var(--bg); }
 .brand h1{ font-size:16px; margin:0 0 2px; letter-spacing:.2px; }
 .brand p{ margin:0; font-size:12px; color:var(--text-dim); }
 .sidebar-hide-btn, .sidebar-show-btn{
