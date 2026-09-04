@@ -1094,6 +1094,7 @@ const UI_STRINGS = {
   sandboxFitAllLabel: {en:"Fit all in view", uk:"Вмістити все на екрані"},
   sandboxSelectedLabel: {en:"Selected", uk:"Обрано"},
   sandboxConnectsLabel: {en:"Commonly connects to:", uk:"Зазвичай поєднується з:"},
+  sandboxUsedInLabel: {en:"Used in these reference architectures — click to load:", uk:"Використовується в цих еталонних архітектурах — натисни, щоб завантажити:"},
   sandboxNoneSelected: {en:"Nothing selected — click a service on the board to see its common connections.", uk:"Нічого не обрано — натисни на сервіс на дошці, щоб побачити його типові зв'язки."},
   sandboxNodesLabel: {en:"On board", uk:"На дошці"},
   sandboxLinksLabel: {en:"Connections", uk:"Зв'язки"},
@@ -14923,8 +14924,52 @@ function sandboxWireDraggableChip(el, onTap){
     document.addEventListener("pointerup", onUp);
   });
 }
+/* Hold a palette chip (not a placed board node — that's sandboxOpenHoldMenu, a different popup
+   for a different purpose: "what commonly connects to this") for 3s to see which curated reference
+   architectures this service appears in, with a one-click load straight onto the board. Only wired
+   on the palette's own chips, not every sandboxWireDraggableChip caller (e.g. the info panel's
+   "commonly connects to" pills stay exactly as they were). */
 function sandboxWirePaletteChip(chip){
   sandboxWireDraggableChip(chip, (name, el)=> sandboxSetPendingPlace(name, el));
+  let archHoldTimer = null, archHoldX = 0, archHoldY = 0;
+  const clearArchHoldTimer = ()=>{ if(archHoldTimer){ clearTimeout(archHoldTimer); archHoldTimer = null; } };
+  chip.addEventListener("mouseenter", (e)=>{
+    archHoldX = e.clientX; archHoldY = e.clientY;
+    clearArchHoldTimer();
+    archHoldTimer = setTimeout(()=>{
+      archHoldTimer = null;
+      sandboxOpenArchHoldMenu(chip.dataset.service, archHoldX, archHoldY);
+    }, 3000);
+  });
+  chip.addEventListener("mousemove", (e)=>{ archHoldX = e.clientX; archHoldY = e.clientY; });
+  chip.addEventListener("mouseleave", clearArchHoldTimer);
+}
+function sandboxOpenArchHoldMenu(serviceName, clientX, clientY){
+  sandboxCloseContextMenu();
+  sandboxCloseHoldMenu();
+  const matches = SANDBOX_ARCH_PATTERNS.filter(p => p.services.includes(serviceName));
+  if(!matches.length) return;
+  const menu = document.createElement("div");
+  menu.className = "sandbox-context-menu";
+  menu.style.left = clientX+"px";
+  menu.style.top = clientY+"px";
+  const itemsHtml = matches.map(p=>
+    `<div class="sandbox-hold-item" data-pattern-id="${p.id}">${p.title[currentLang]}</div>`
+  ).join("");
+  menu.innerHTML = `<div class="sandbox-context-title">${T("sandboxUsedInLabel")}</div>${itemsHtml}`;
+  document.body.appendChild(menu);
+  sandboxHoldMenuEl = menu;
+  menu.querySelectorAll("[data-pattern-id]").forEach(item=>{
+    item.addEventListener("click", (e)=>{
+      e.stopPropagation();
+      sandboxLoadArchitecture(item.dataset.patternId);
+      sandboxCloseHoldMenu();
+    });
+  });
+  setTimeout(()=>{
+    document.addEventListener("click", sandboxCloseHoldMenu);
+    document.addEventListener("contextmenu", sandboxCloseHoldMenu);
+  }, 0);
 }
 /* Searches outward in expanding rings from (baseX, baseY) for a spot at least minDist from
    every existing node's center, so a freshly-added node doesn't land on top of another one.
