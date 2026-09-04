@@ -50,15 +50,19 @@ body{
 .sidebar-hide-btn, .sidebar-show-btn{
   flex-shrink:0; width:26px; height:26px; border-radius:7px; border:1px solid var(--border);
   background:var(--bg-panel); color:var(--text-dim); cursor:pointer; font-size:13px;
-  align-items:center; justify-content:center;
+  display:flex; align-items:center; justify-content:center;
 }
-.sidebar-hide-btn{ display:flex; }
 .sidebar-hide-btn:hover, .sidebar-show-btn:hover{ color:var(--text); border-color:var(--accent); }
-.sidebar-show-btn{
-  display:none; position:sticky; top:20px; align-self:flex-start; margin-right:6px;
-}
+/* The button itself must stay a small 26px box (for its own visual size), but position:sticky
+   only has room to stay stuck for as long as its OWN box scrolls through the viewport — a lone
+   26px-tall flex item leaves it almost nothing to stick within, so it unsticks (jumps away)
+   after a few px of scroll. The wrap is a plain, invisible flex item that stretches to the full
+   row height (matching main's content height) purely to give the sticky button real room to
+   stay pinned near the top for the whole page, not just its own tiny box. */
+.sidebar-show-btn-wrap{ display:none; flex-shrink:0; width:26px; margin-right:6px; align-self:stretch; }
+.sidebar-show-btn{ position:sticky; top:20px; }
 .app.sidebar-hidden .sidebar{ display:none; }
-.app.sidebar-hidden .sidebar-show-btn{ display:flex; }
+.app.sidebar-hidden .sidebar-show-btn-wrap{ display:block; }
 .searchbox{
   width:100%; padding:9px 12px; margin-bottom:14px; border-radius:10px;
   border:1px solid var(--border); background:var(--bg-panel); color:var(--text);
@@ -890,7 +894,7 @@ footer.note{ margin-top:34px; font-size:12px; color:var(--text-dim); }
   main{ padding:20px 16px 60px; }
   /* Hide/show-panel is a desktop-width reading-space feature — mobile already stacks the sidebar
      above the content and has its own "Sections ▾" collapse for the nav list specifically. */
-  .sidebar-hide-btn, .app.sidebar-hidden .sidebar-show-btn{ display:none; }
+  .sidebar-hide-btn, .app.sidebar-hidden .sidebar-show-btn-wrap{ display:none; }
 }
 </style>
 <script>
@@ -903,7 +907,7 @@ footer.note{ margin-top:34px; font-size:12px; color:var(--text-dim); }
 </script>
 
 <div class="app">
-  <button class="sidebar-show-btn" id="sidebarShowBtn" title="Show panel" aria-label="Show panel">▸</button>
+  <div class="sidebar-show-btn-wrap"><button class="sidebar-show-btn" id="sidebarShowBtn" title="Show panel" aria-label="Show panel">▸</button></div>
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <div><h1 id="brandTitleEl">SAA-C03 Fast Reference</h1><p id="brandSubEl">Tabs · flip-cards · diagrams</p></div>
