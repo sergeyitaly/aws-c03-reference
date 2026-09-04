@@ -517,14 +517,18 @@ mark{ background:var(--accent-3); color:#1a1a2e; padding:0 2px; border-radius:3p
 .sandbox-layout{ display:grid; grid-template-columns:260px 1fr; gap:14px; align-items:start; }
 @media (max-width:880px){
   .sandbox-layout{ grid-template-columns:1fr; }
-  /* Once the palette stacks above the board instead of sitting beside it, its own 640px scroll
-     height would otherwise push the actual board (the thing you came here to use) far down the
-     page before it's even visible. */
-  .sandbox-palette{ max-height:280px; }
+  /* Once the palette stacks above the board instead of sitting beside it, matching the board's
+     own (much taller) height would push the actual board far down the page before it's even
+     visible — reset height/min-height back down since min-height otherwise wins over max-height
+     in the box model and would silently override this 280px cap. */
+  .sandbox-palette{ height:auto; min-height:0; max-height:280px; }
 }
 .sandbox-palette{
   background:var(--bg-panel); border:1px solid var(--border); border-radius:12px;
-  padding:12px; max-height:640px; overflow-y:auto; transition:background .12s, border-color .12s;
+  padding:12px; overflow-y:auto; transition:background .12s, border-color .12s;
+  /* Matches .sandbox-board's own height formula exactly (see below) so the two side-by-side
+     panels line up — was a fixed max-height:640px before, independent of the board's height. */
+  height:min(70vh,600px); height:min(70svh,600px); min-height:420px;
 }
 .sandbox-palette.sandbox-remove-target{
   background:rgba(220,38,38,.13); border-color:#DC2626;
@@ -532,6 +536,9 @@ mark{ background:var(--accent-3); color:#1a1a2e; padding:0 2px; border-radius:3p
 .sandbox-search{
   width:100%; padding:7px 10px; margin-bottom:10px; border-radius:8px; border:1px solid var(--border);
   background:var(--bg); color:var(--text); font-size:12.5px; box-sizing:border-box;
+  /* Sticky within the palette's own scroll container so it stays visible while the category list
+     scrolls underneath it, instead of scrolling away with the rest of the palette. */
+  position:sticky; top:0; z-index:2;
 }
 .sandbox-cat-label{
   font-size:10.5px; text-transform:uppercase; letter-spacing:.5px; font-weight:800;
