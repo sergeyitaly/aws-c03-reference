@@ -31,13 +31,13 @@
   --code-bg:#1a1a24; --shadow: 0 1px 3px rgba(0,0,0,.4);
 }
 *{box-sizing:border-box;}
+html{ overflow-x:hidden; }
 body{
   margin:0; background:var(--bg); color:var(--text);
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
-  font-size:15px; line-height:1.5;
+  font-size:15px; line-height:1.5; overflow-x:hidden;
 }
 .app{ display:flex; min-height:100vh; min-height:100svh; max-width:1400px; margin:0 auto; }
-.app.sidebar-hidden{ max-width:1432px; }
 
 /* ---- Sidebar / tabs ---- */
 .sidebar{
@@ -53,16 +53,17 @@ body{
   display:flex; align-items:center; justify-content:center;
 }
 .sidebar-hide-btn:hover, .sidebar-show-btn:hover{ color:var(--text); border-color:var(--accent); }
-/* The button itself must stay a small 26px box (for its own visual size), but position:sticky
-   only has room to stay stuck for as long as its OWN box scrolls through the viewport — a lone
-   26px-tall flex item leaves it almost nothing to stick within, so it unsticks (jumps away)
-   after a few px of scroll. The wrap is a plain, invisible flex item that stretches to the full
-   row height (matching main's content height) purely to give the sticky button real room to
-   stay pinned near the top for the whole page, not just its own tiny box. */
-.sidebar-show-btn-wrap{ display:none; flex-shrink:0; width:26px; margin-right:6px; align-self:stretch; }
-.sidebar-show-btn{ position:sticky; top:20px; }
+/* Must stay visible for the ENTIRE page regardless of how far you scroll, not just while
+   scrolling through some element's own box (that's all position:sticky can ever guarantee —
+   it was tried and still let the button scroll out of view once its box ended). position:fixed
+   pins it to the viewport itself, so it never leaves the screen. It's taken out of the .app flex
+   row entirely (fixed elements don't occupy flex space), so main simply gets the whole freed
+   width with nothing to share it with; the reserved top padding below keeps it clear of the
+   floating button instead of sitting underneath it. */
+.sidebar-show-btn{ display:none; position:fixed; top:20px; left:16px; z-index:20; }
 .app.sidebar-hidden .sidebar{ display:none; }
-.app.sidebar-hidden .sidebar-show-btn-wrap{ display:block; }
+.app.sidebar-hidden .sidebar-show-btn{ display:flex; }
+.app.sidebar-hidden main{ padding-top:64px; }
 .searchbox{
   width:100%; padding:9px 12px; margin-bottom:14px; border-radius:10px;
   border:1px solid var(--border); background:var(--bg-panel); color:var(--text);
@@ -894,7 +895,7 @@ footer.note{ margin-top:34px; font-size:12px; color:var(--text-dim); }
   main{ padding:20px 16px 60px; }
   /* Hide/show-panel is a desktop-width reading-space feature — mobile already stacks the sidebar
      above the content and has its own "Sections ▾" collapse for the nav list specifically. */
-  .sidebar-hide-btn, .app.sidebar-hidden .sidebar-show-btn-wrap{ display:none; }
+  .sidebar-hide-btn, .app.sidebar-hidden .sidebar-show-btn{ display:none; }
 }
 </style>
 <script>
@@ -907,7 +908,7 @@ footer.note{ margin-top:34px; font-size:12px; color:var(--text-dim); }
 </script>
 
 <div class="app">
-  <div class="sidebar-show-btn-wrap"><button class="sidebar-show-btn" id="sidebarShowBtn" title="Show panel" aria-label="Show panel">▸</button></div>
+  <button class="sidebar-show-btn" id="sidebarShowBtn" title="Show panel" aria-label="Show panel">▸</button>
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <div><h1 id="brandTitleEl">SAA-C03 Fast Reference</h1><p id="brandSubEl">Tabs · flip-cards · diagrams</p></div>
@@ -1993,7 +1994,7 @@ const SECTIONS_EN = [
   {t:"VPC Peering", f:["Direct 1:1, NOT transitive (A↔B, B↔C ≠ A↔C)","CIDR ranges must not overlap"], p:"Route tables (manual updates both sides), Transit Gateway (the scale-out alternative)"},
   {t:"Transit Gateway", f:["Regional hub-and-spoke for many VPCs/on-prem","Supports transitive routing (unlike peering)","Can peer across regions","The only AWS networking construct that supports IP multicast — 'multicast' in a question is a dead giveaway for TGW"], p:"VPC Peering (what it replaces at scale), Direct Connect, Site-to-Site VPN, RAM (cross-account sharing)"},
   {t:"VPC Endpoints", f:["Gateway endpoint: S3 + DynamoDB ONLY, free, route-table based","Interface endpoint (PrivateLink): most other services, ENI-backed, small cost, works over VPN/DX too","Gateway endpoint also avoids NAT Gateway per-GB charge for S3/DynamoDB"], p:"S3, DynamoDB (Gateway type), most other services (Interface/PrivateLink), NAT Gateway (what it helps avoid)"},
-  {t:"Flow Logs & Reachability Analyzer", f:["Flow Logs: IP traffic metadata at ENI/subnet/VPC — feeds GuardDuty","Reachability Analyzer: static-analysis path check without live traffic"], p:"GuardDuty, CloudWatch Logs/S3 (Flow Logs destination), Athena (querying Flow Logs)"},
+  {t:"Flow Logs & Reachability Analyzer", f:["Flow Logs: IP traffic metadata at ENI/subnet/VPC, published to 3 destinations — CloudWatch Logs (real-time monitoring, metric filters/alarms, Logs Insights), S3 (low-cost long-term storage/compliance, queried via Athena), or Kinesis Data Firehose (streaming to third-party/open-source tools like OpenSearch, Splunk, Datadog)","GuardDuty separately consumes this same traffic metadata for threat detection — it's a downstream analyzer of Flow Logs, not one of the 3 publish destinations","Reachability Analyzer: static-analysis path check without live traffic"], p:"CloudWatch Logs, S3, Kinesis Data Firehose (the 3 destinations), Athena (querying S3-stored Flow Logs), GuardDuty (analyzes Flow Logs for threats), OpenSearch/Splunk/Datadog (via Firehose)"},
   {t:"VPN vs Direct Connect", f:["VPN: IPsec over internet, fast setup, variable latency","Direct Connect: dedicated link, consistent low latency, NOT encrypted by default (layer VPN over DX if needed)"], p:"Transit Gateway, Direct Connect Gateway, Virtual Private Gateway/Customer Gateway"},
  ]},
 
@@ -2385,7 +2386,7 @@ const SECTIONS_UK = [
   {t:"VPC Peering", f:["Пряме з'єднання 1:1, НЕ транзитивне (A↔B, B↔C ≠ A↔C)","Діапазони CIDR не мають перетинатись"], p:"Таблиці маршрутів (ручне оновлення з обох боків), Transit Gateway (альтернатива для масштабу)"},
   {t:"Transit Gateway", f:["Регіональна модель hub-and-spoke для багатьох VPC/on-prem","Підтримує транзитну маршрутизацію (на відміну від peering)","Може пірити між регіонами","Єдина мережева конструкція AWS, що підтримує IP multicast — слово «multicast» у питанні майже завжди вказує саме на TGW"], p:"VPC Peering (те, що замінює на масштабі), Direct Connect, Site-to-Site VPN, RAM (спільний доступ між акаунтами)"},
   {t:"VPC Endpoints", f:["Gateway endpoint: ЛИШЕ S3 + DynamoDB, безкоштовно, на основі таблиці маршрутів","Interface endpoint (PrivateLink): більшість інших сервісів, на основі ENI, невелика вартість, працює й через VPN/DX","Gateway endpoint також уникає плати NAT Gateway за ГБ для S3/DynamoDB"], p:"S3, DynamoDB (тип Gateway), більшість інших сервісів (Interface/PrivateLink), NAT Gateway (те, чого допомагає уникнути)"},
-  {t:"Flow Logs та Reachability Analyzer", f:["Flow Logs: метадані IP-трафіку на рівні ENI/підмережі/VPC — живлять GuardDuty","Reachability Analyzer: статичний аналіз шляху без реального трафіку"], p:"GuardDuty, CloudWatch Logs/S3 (призначення Flow Logs), Athena (запити до Flow Logs)"},
+  {t:"Flow Logs та Reachability Analyzer", f:["Flow Logs: метадані IP-трафіку на рівні ENI/підмережі/VPC, публікуються в 3 місця призначення — CloudWatch Logs (моніторинг у реальному часі, метричні фільтри/алярми, Logs Insights), S3 (дешеве довгострокове зберігання/відповідність вимогам, запити через Athena) або Kinesis Data Firehose (стрімінг у сторонні/відкриті інструменти на кшталт OpenSearch, Splunk, Datadog)","GuardDuty окремо споживає ті самі метадані трафіку для виявлення загроз — це подальший аналізатор Flow Logs, а не одне з 3 місць призначення для публікації","Reachability Analyzer: статичний аналіз шляху без реального трафіку"], p:"CloudWatch Logs, S3, Kinesis Data Firehose (3 місця призначення), Athena (запити до Flow Logs, збережених у S3), GuardDuty (аналізує Flow Logs на загрози), OpenSearch/Splunk/Datadog (через Firehose)"},
   {t:"VPN vs Direct Connect", f:["VPN: IPsec через інтернет, швидке налаштування, змінна затримка","Direct Connect: виділений канал, стабільно низька затримка, НЕ зашифрований за замовчуванням (додай VPN поверх DX за потреби)"], p:"Transit Gateway, Direct Connect Gateway, Virtual Private Gateway/Customer Gateway"},
  ]},
 
