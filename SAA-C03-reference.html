@@ -2807,6 +2807,13 @@ const EXAM_TRAPS = [
     {label:{en:"\"Just enable encryption on it\"",uk:"\"Просто увімкнути шифрування\""}, note:{en:"wrong — no in-place toggle exists",uk:"хибно — немає перемикача на льоту"}, fill:"rgba(220,38,38,.13)", stroke:"#DC2626", icon:"RDS", arrowLabel:{en:"real path:",uk:"реальний шлях:"}},
     {label:{en:"Snapshot → encrypted copy → restore",uk:"Знімок → зашифрована копія → відновлення"}, note:{en:"the only way to add it later",uk:"єдиний спосіб додати пізніше"}, fill:"rgba(22,163,74,.13)", stroke:"#16A34A", icon:"RDS"},
   ]},
+{ domain:1, title:{en:"Direct Connect virtual interface type must match the destination", uk:"Тип віртуального інтерфейсу Direct Connect має відповідати призначенню"},
+  explain:{en:"A public VIF reaches AWS public endpoints (S3, other public AWS APIs) over Direct Connect. A private VIF reaches resources inside a VPC — including PrivateLink interface endpoints. Services like EFS and FSx only expose an interface endpoint (they have no Gateway endpoint option), so reaching them privately over Direct Connect requires a private VIF into that interface endpoint, not a public VIF and not an S3-style gateway endpoint.",
+           uk:"Public VIF сягає публічних endpoint'ів AWS (S3, інші публічні API AWS) через Direct Connect. Private VIF сягає ресурсів усередині VPC — включно з PrivateLink interface endpoints. Сервіси на кшталт EFS та FSx мають лише interface endpoint (без варіанту gateway endpoint), тож приватний доступ до них через Direct Connect потребує private VIF до цього interface endpoint, а не public VIF і не gateway endpoint у стилі S3."},
+  steps:[
+    {label:{en:"Public VIF → interface endpoint",uk:"Public VIF → interface endpoint"}, note:{en:"wrong — a public VIF can't reach a VPC interface endpoint",uk:"хибно — public VIF не сягає interface endpoint у VPC"}, fill:"rgba(220,38,38,.13)", stroke:"#DC2626", icon:"Direct Connect", arrowLabel:{en:"private resource needs",uk:"приватний ресурс потребує"}},
+    {label:{en:"Private VIF → PrivateLink interface endpoint",uk:"Private VIF → PrivateLink interface endpoint"}, note:{en:"the only path to EFS/FSx-style services",uk:"єдиний шлях до сервісів на кшталт EFS/FSx"}, fill:"rgba(22,163,74,.13)", stroke:"#16A34A", icon:"VPC Endpoints"},
+  ]},
 // ---- Domain 2: Resilient (26%) ----
 { domain:2, title:{en:"RDS Multi-AZ's standby is never readable", uk:"Standby RDS Multi-AZ ніколи не читається"},
   explain:{en:"The Multi-AZ standby exists purely for automatic failover via a synchronous replica — it never serves read traffic. If the goal is offloading reads from the primary, Multi-AZ does nothing for that; you need a Read Replica instead.",
@@ -2892,6 +2899,13 @@ const EXAM_TRAPS = [
     {label:{en:"\"Zero RPO means instant failover\"",uk:"\"Нульовий RPO = миттєвий failover\""}, note:{en:"wrong — that's what RTO measures",uk:"хибно — це вимірює RTO"}, fill:"rgba(220,38,38,.13)", stroke:"#DC2626", arrowLabel:{en:"reality:",uk:"насправді:"}},
     {label:{en:["RTO = downtime tolerance","RPO = data-loss tolerance"],uk:["RTO = толерантність простою","RPO = толерантність втрати даних"]}, note:{en:"two separate dials to design for",uk:"два окремі параметри проєктування"}, fill:"rgba(22,163,74,.13)", stroke:"#16A34A"},
   ]},
+{ domain:2, title:{en:"DNS caching defeats a fast blue/green cutover — Global Accelerator doesn't rely on DNS", uk:"DNS-кешування зриває швидке перемикання blue/green — Global Accelerator не залежить від DNS"},
+  explain:{en:"Route 53 weighted routing (and any DNS-based traffic shifting) is at the mercy of client-side and resolver DNS caching — you can't control how long a device holds onto a stale answer once you update a record. AWS Global Accelerator uses two static anycast IPs with traffic dials/endpoint weights enforced at the network layer, so a shift takes effect within seconds regardless of any DNS TTL or cache. A scenario that explicitly flags DNS caching as a problem — especially for a global, multi-Region app — points at Global Accelerator over Route 53 weighted routing.",
+           uk:"Зважена маршрутизація Route 53 (і будь-яке DNS-переключення трафіку загалом) залежить від DNS-кешування на клієнті й резолвері — ви не контролюєте, як довго пристрій тримає застарілу відповідь після оновлення запису. AWS Global Accelerator використовує дві статичні anycast IP-адреси з traffic dials/вагами ендпоінтів, що застосовуються на мережевому рівні, тож перемикання діє за секунди незалежно від будь-якого TTL чи кешу DNS. Сценарій, що прямо називає DNS-кешування проблемою — особливо для глобального, мультирегіонального застосунку — вказує на Global Accelerator, а не на зважену маршрутизацію Route 53."},
+  steps:[
+    {label:{en:"Route 53 weighted routing",uk:"Зважена маршрутизація Route 53"}, note:{en:"wrong — subject to DNS caching delays",uk:"хибно — залежить від затримок DNS-кешування"}, fill:"rgba(220,38,38,.13)", stroke:"#DC2626", icon:"Route 53", arrowLabel:{en:"DNS caching is a problem? use",uk:"DNS-кешування — проблема? — це"}},
+    {label:{en:"AWS Global Accelerator",uk:"AWS Global Accelerator"}, note:{en:"static anycast IPs, shifts in seconds",uk:"статичні anycast IP, перемикання за секунди"}, fill:"rgba(22,163,74,.13)", stroke:"#16A34A", icon:"Global Accelerator"},
+  ]},
 // ---- Domain 3: High-Performing (24%) ----
 { domain:3, title:{en:"ALB vs NLB — opposite cross-zone defaults", uk:"ALB проти NLB — протилежні дефолти cross-zone"},
   explain:{en:"ALB has cross-zone load balancing on by default, at no extra cost. NLB has it off by default, and enabling it can introduce cross-AZ data transfer charges. A cost-sensitive NLB scenario expects you to know this asymmetry exists.",
@@ -2963,6 +2977,41 @@ const EXAM_TRAPS = [
     {label:{en:"Gateway endpoint for EC2/other",uk:"Gateway endpoint для EC2/іншого"}, note:{en:"wrong — doesn't exist, not just costly",uk:"хибно — не існує, а не просто дорого"}, fill:"rgba(220,38,38,.13)", stroke:"#DC2626", icon:"VPC Endpoints", arrowLabel:{en:"only S3/DynamoDB get",uk:"лише S3/DynamoDB мають"}},
     {label:{en:"Gateway endpoint (S3, DynamoDB only)",uk:"Gateway endpoint (лише S3, DynamoDB)"}, note:{en:"everything else uses Interface",uk:"усе інше — через Interface"}, fill:"rgba(22,163,74,.13)", stroke:"#16A34A", icon:"S3"},
   ]},
+{ domain:3, title:{en:"Throttling and buffering are different tools — ELB does neither", uk:"Throttling і буферизація — різні інструменти, ELB не робить жодного"},
+  explain:{en:"Elastic Load Balancer only distributes traffic to healthy targets — it cannot throttle or buffer requests. API Gateway throttles using a token-bucket algorithm (steady-state rate + burst limit). SQS and Kinesis buffer incoming volume so downstream consumers aren't overwhelmed by a spike. A scenario needing both throttling and buffering wants API Gateway plus SQS/Kinesis — not ELB, and not Lambda's own throttling (which just means excess requests fail with a 429).",
+           uk:"Elastic Load Balancer лише розподіляє трафік між здоровими цілями — він не може ані throttle-ити, ані буферизувати запити. API Gateway обмежує швидкість алгоритмом token bucket (стала швидкість + ліміт burst). SQS і Kinesis буферизують вхідний обсяг, щоб сплеск не перевантажив споживачів. Сценарій, що потребує і throttling, і буферизації, хоче API Gateway плюс SQS/Kinesis — не ELB, і не власний throttling Lambda (який лише означає, що зайві запити падають з кодом 429)."},
+  steps:[
+    {label:{en:"ELB in front of the spike",uk:"ELB перед сплеском"}, note:{en:"wrong — distributes only, no throttle/buffer",uk:"хибно — лише розподіляє, без throttle/буфера"}, fill:"rgba(220,38,38,.13)", stroke:"#DC2626", icon:"ELB", arrowLabel:{en:"use instead",uk:"натомість"}},
+    {label:{en:["API Gateway = throttles","SQS/Kinesis = buffer"],uk:["API Gateway = throttling","SQS/Kinesis = буфер"]}, note:{en:"the actual throttle/buffer tools",uk:"справжні інструменти throttle/буфера"}, fill:"rgba(22,163,74,.13)", stroke:"#16A34A", icon:"API Gateway"},
+  ]},
+{ domain:3, title:{en:"ElastiCache can't front S3 — that's what CloudFront is for", uk:"ElastiCache не може стояти перед S3 — для цього існує CloudFront"},
+  explain:{en:"ElastiCache (Redis or Memcached) is an in-memory cache for a database layer (RDS/DynamoDB) — it has no mechanism to serve or cache S3 objects for end users. Caching static content served from S3 is a CDN's job: Amazon CloudFront caches objects at edge locations close to users and falls back to S3 as the origin only on a cache miss.",
+           uk:"ElastiCache (Redis чи Memcached) — це кеш у пам'яті для рівня бази даних (RDS/DynamoDB) — у нього немає механізму обслуговувати чи кешувати об'єкти S3 для кінцевих користувачів. Кешування статичного контенту з S3 — це робота CDN: Amazon CloudFront кешує об'єкти в edge-локаціях поруч із користувачами й звертається до S3 як до origin лише при промаху кешу."},
+  steps:[
+    {label:{en:"ElastiCache in front of S3",uk:"ElastiCache перед S3"}, note:{en:"wrong — not a valid combination",uk:"хибно — це неможлива комбінація"}, fill:"rgba(220,38,38,.13)", stroke:"#DC2626", icon:"ElastiCache", arrowLabel:{en:"static content needs",uk:"для статичного контенту:"}},
+    {label:{en:"CloudFront in front of S3",uk:"CloudFront перед S3"}, note:{en:"edge caching, S3 as origin",uk:"edge-кешування, S3 як origin"}, fill:"rgba(22,163,74,.13)", stroke:"#16A34A", icon:"CloudFront"},
+  ]},
+{ domain:3, title:{en:"NLB always routes to a target's private IP, however you registered it", uk:"NLB завжди маршрутизує на приватну IP цілі, незалежно від способу реєстрації"},
+  explain:{en:"Whether you register an NLB target by instance ID or by IP address, the actual packet is always delivered to the primary private IP address on the target's primary network interface — instance ID is only the registration handle, never the routing mechanism, and public/elastic IPs are never used for this.",
+           uk:"Незалежно від того, реєструєте ви ціль NLB за instance ID чи за IP-адресою, пакет завжди доставляється на первинну приватну IP-адресу первинного мережевого інтерфейсу цілі — instance ID лише спосіб реєстрації, а не механізм маршрутизації, і публічні/elastic IP тут ніколи не використовуються."},
+  steps:[
+    {label:{en:"\"Routes by instance ID\"",uk:"\"Маршрутизує за instance ID\""}, note:{en:"wrong — ID is only how you register it",uk:"хибно — ID лише для реєстрації"}, fill:"rgba(220,38,38,.13)", stroke:"#DC2626", icon:"ELB", arrowLabel:{en:"actual routing uses",uk:"реальна маршрутизація йде через"}},
+    {label:{en:"Target's primary private IP",uk:"Первинна приватна IP цілі"}, note:{en:"always — never public/elastic IP",uk:"завжди — ніколи публічна/elastic IP"}, fill:"rgba(22,163,74,.13)", stroke:"#16A34A", icon:"ELB"},
+  ]},
+{ domain:3, title:{en:"A read-heavy RDS problem is a caching problem, not a warehouse or bigger-replica problem", uk:"Проблема інтенсивного читання RDS вирішується кешем, а не сховищем даних чи більшою реплікою"},
+  explain:{en:"Redshift is a columnar OLAP data warehouse for analytical queries over historical data — migrating an OLTP app to it doesn't fix live read latency or cut cost. Adding Read Replicas only adds more database cost without reducing per-request latency the way a cache does. Amazon ElastiCache sitting in front of RDS is what actually cuts both latency and load, and it's what lets you downsize the primary instance too.",
+           uk:"Redshift — це колонкове OLAP-сховище даних для аналітичних запитів над історичними даними — перенесення на нього OLTP-застосунку не виправляє живу затримку читання й не знижує вартість. Додавання Read Replicas лише додає вартість бази даних, не знижуючи затримку на запит так, як це робить кеш. Amazon ElastiCache перед RDS справді знижує і затримку, і навантаження, а також дає змогу зменшити розмір primary-інстансу."},
+  steps:[
+    {label:{en:"Move to Redshift / add Read Replicas",uk:"Перейти на Redshift / додати Read Replicas"}, note:{en:"wrong — analytics tool / adds cost, not a latency fix",uk:"хибно — аналітичний інструмент / додає вартість, не рятує від затримки"}, fill:"rgba(220,38,38,.13)", stroke:"#DC2626", icon:"Redshift", arrowLabel:{en:"cut latency + cost with",uk:"затримку й вартість ріже:"}},
+    {label:{en:"ElastiCache in front of RDS",uk:"ElastiCache перед RDS"}, note:{en:"cuts latency, lets you downsize RDS",uk:"ріже затримку, дає зменшити RDS"}, fill:"rgba(22,163,74,.13)", stroke:"#16A34A", icon:"ElastiCache"},
+  ]},
+{ domain:3, title:{en:"AWS DMS can stream S3 straight into Kinesis — no Lambda relay needed", uk:"AWS DMS може стрімити S3 прямо в Kinesis — без потреби в Lambda-ретрансляторі"},
+  explain:{en:"When 'fastest to build' shows up alongside streaming existing plus ongoing S3 data into Kinesis Data Streams, the instinct to wire up S3 event notifications → Lambda → Kinesis means writing and maintaining custom code. AWS DMS supports S3 as a source and Kinesis Data Streams/MSK as a target out of the box, handling both the full initial load and ongoing change data capture, with no code to write.",
+           uk:"Коли в умові поряд зі стрімінгом наявних і майбутніх даних S3 у Kinesis Data Streams з'являється \"найшвидше побудувати\", інстинкт налаштувати S3 event notifications → Lambda → Kinesis означає писати й підтримувати власний код. AWS DMS з коробки підтримує S3 як джерело та Kinesis Data Streams/MSK як ціль, обробляючи і повне початкове завантаження, і постійний change data capture, без жодного коду."},
+  steps:[
+    {label:{en:"S3 event → Lambda → Kinesis",uk:"S3 подія → Lambda → Kinesis"}, note:{en:"works, but custom code to build/maintain",uk:"працює, але потрібен власний код"}, fill:"rgba(220,38,38,.13)", stroke:"#DC2626", icon:"Lambda", arrowLabel:{en:"fastest, no-code path:",uk:"найшвидший шлях без коду:"}},
+    {label:{en:"AWS DMS: S3 source → Kinesis target",uk:"AWS DMS: джерело S3 → ціль Kinesis"}, note:{en:"built-in, full load + ongoing CDC",uk:"вбудовано, повне завантаження + постійний CDC"}, fill:"rgba(22,163,74,.13)", stroke:"#16A34A", icon:"Database Migration Service"},
+  ]},
 // ---- Domain 4: Cost-Optimized (20%) ----
 { domain:4, title:{en:"Compute Savings Plans vs EC2 Instance Savings Plans vs RIs", uk:"Compute Savings Plans проти EC2 Instance Savings Plans проти RI"},
   explain:{en:"Compute Savings Plans are the most flexible (any instance family/region, covers Fargate/Lambda too) but the smallest discount. EC2 Instance Savings Plans lock to one family+region for a bigger discount. Reserved Instances are the least flexible but resellable on the RI Marketplace. The exam tests matching flexibility need to the right tier, not just \"which saves the most.\"",
@@ -3026,6 +3075,27 @@ const EXAM_TRAPS = [
   steps:[
     {label:{en:"Pick IA/Glacier by price tag alone",uk:"Обрати IA/Glacier лише за ціною"}, note:{en:"wrong — ignores retrieval + min. duration fees",uk:"хибно — ігнорує плату за вилучення + мінімум"}, fill:"rgba(220,38,38,.13)", stroke:"#DC2626", icon:"S3", arrowLabel:{en:"compare instead:",uk:"натомість порівнюй:"}},
     {label:{en:"Total cost for the real access pattern",uk:"Повну вартість для реального патерну"}, note:{en:"storage + retrieval + min. duration",uk:"зберігання + вилучення + мінімум"}, fill:"rgba(22,163,74,.13)", stroke:"#16A34A", icon:"S3"},
+  ]},
+{ domain:4, title:{en:"Once data is already in S3, Snowball is off the table", uk:"Якщо дані вже в S3, Snowball більше не варіант"},
+  explain:{en:"Snowball/Snowball Edge exists to move data from a physical on-premises location into AWS — it has no role once the data already lives in an S3 bucket. A one-time bulk copy from one S3 bucket to another (even cross-Region, even at petabyte scale) is handled by the aws s3 sync CLI command or S3 Batch Replication (enabled, run once, then the replication rule removed) — never by shipping a physical device for data that's already in the cloud.",
+           uk:"Snowball/Snowball Edge існує для перенесення даних із фізичної локальної локації в AWS — він не має жодної ролі, коли дані вже лежать у бакеті S3. Одноразове масове копіювання з одного бакета S3 в інший (навіть крос-регіонально, навіть на рівні петабайтів) виконується командою CLI aws s3 sync або S3 Batch Replication (увімкнути, запустити один раз, потім видалити правило реплікації) — ніколи через відправку фізичного пристрою для даних, які вже в хмарі."},
+  steps:[
+    {label:{en:"Snowball Edge for an S3-to-S3 copy",uk:"Snowball Edge для копіювання S3-в-S3"}, note:{en:"wrong — Snowball is only for on-prem → AWS",uk:"хибно — Snowball лише для on-prem → AWS"}, fill:"rgba(220,38,38,.13)", stroke:"#DC2626", icon:"S3", arrowLabel:{en:"already in S3? use",uk:"вже в S3? — це"}},
+    {label:{en:"aws s3 sync, or S3 Batch Replication",uk:"aws s3 sync або S3 Batch Replication"}, note:{en:"one-time bulk copy, no hardware needed",uk:"одноразове масове копіювання, без обладнання"}, fill:"rgba(22,163,74,.13)", stroke:"#16A34A", icon:"S3"},
+  ]},
+{ domain:4, title:{en:"A lifecycle rule can't transition to IA before 30 days — no matter what the rule says", uk:"Lifecycle-правило не може перенести в IA раніше 30 днів — незалежно від налаштувань"},
+  explain:{en:"Amazon S3 enforces a 30-day minimum storage duration before an object can transition from Standard to Standard-IA or One Zone-IA — a lifecycle rule configured for 7 days simply isn't a valid option, it's always a distractor. Once past that 30-day floor, the choice between the two IA classes comes down to durability needs: re-creatable/loss-tolerant data should go to the cheaper One Zone-IA (single AZ, 20% less), while data that must survive an entire AZ failure needs Standard-IA.",
+           uk:"Amazon S3 вимагає мінімум 30 днів зберігання перед переходом об'єкта зі Standard у Standard-IA чи One Zone-IA — lifecycle-правило, налаштоване на 7 днів, просто не є коректним варіантом, це завжди дистрактор. Після цього мінімуму в 30 днів вибір між двома класами IA залежить від потреб довговічності: відновлювані/толерантні до втрати дані варто класти в дешевший One Zone-IA (одна AZ, на 20% дешевше), а дані, що мають пережити повну відмову AZ, потребують Standard-IA."},
+  steps:[
+    {label:{en:"Lifecycle rule at 7 days",uk:"Lifecycle-правило на 7 днів"}, note:{en:"wrong — below the 30-day minimum, always a distractor",uk:"хибно — нижче мінімуму 30 днів, завжди дистрактор"}, fill:"rgba(220,38,38,.13)", stroke:"#DC2626", icon:"S3", arrowLabel:{en:"valid timing + class:",uk:"коректний час + клас:"}},
+    {label:{en:"30 days, then One Zone-IA if re-creatable",uk:"30 днів, потім One Zone-IA якщо дані відновлювані"}, note:{en:"Standard-IA only if it must survive an AZ loss",uk:"Standard-IA лише якщо треба пережити втрату AZ"}, fill:"rgba(22,163,74,.13)", stroke:"#16A34A", icon:"S3"},
+  ]},
+{ domain:4, title:{en:"Over-provision Lambda memory for speed, never its timeout for safety", uk:"Пам'ять Lambda можна над-виділяти для швидкості, timeout — ніколи \"про всяк випадок\""},
+  explain:{en:"Lambda allocates CPU/network proportionally to memory, so raising memory can genuinely make a function run faster and sometimes even cost less overall. Timeout is different: it's a safety ceiling that should match the function's actual expected runtime. Setting it generously 'just in case' doesn't improve performance — it only means a hung or runaway invocation burns money for far longer before AWS finally cuts it off.",
+           uk:"Lambda виділяє CPU/мережу пропорційно до пам'яті, тож збільшення пам'яті справді може прискорити виконання функції й іноді навіть знизити загальну вартість. Timeout — інше: це запобіжна стеля, яка має відповідати реальному очікуваному часу виконання. Щедре налаштування \"про всяк випадок\" не покращує продуктивність — воно лише дозволяє завислому чи нескінченному виклику довше витрачати гроші, перш ніж AWS нарешті його зупинить."},
+  steps:[
+    {label:{en:"Over-provision timeout \"to be safe\"",uk:"Над-виділити timeout \"про всяк випадок\""}, note:{en:"wrong — just lets a hung invocation run up cost",uk:"хибно — лише дозволяє завислому виклику накрутити вартість"}, fill:"rgba(220,38,38,.13)", stroke:"#DC2626", icon:"Lambda", arrowLabel:{en:"correct lever is",uk:"правильний важіль:"}},
+    {label:{en:"Over-provision memory instead",uk:"Над-виділити пам'ять натомість"}, note:{en:"more CPU/network, can even cut cost",uk:"більше CPU/мережі, може навіть знизити вартість"}, fill:"rgba(22,163,74,.13)", stroke:"#16A34A", icon:"Lambda"},
   ]},
 ];
 
@@ -10396,7 +10466,7 @@ const SERVICE_ICON_MAP = {
   "EKS":"eks", "Fargate":"fargate", "Auto Scaling":"elb-asg", "Batch":"batch",
   "Lightsail":"lightsail", "Outposts":"outposts", "App Runner":"apprunner",
   "S3":"s3", "S3 Glacier":"glacier", "EBS":"ebs", "EFS":"efs", "FSx":"fsx",
-  "Storage Gateway":"storagegateway", "AWS Transfer Family":"transferfamily", "S3 Transfer Acceleration":"s3accel", "AWS Backup":"backup",
+  "Storage Gateway":"storagegateway", "AWS Transfer Family":"transferfamily", "DataSync":"datasync", "S3 Transfer Acceleration":"s3accel", "AWS Backup":"backup",
   "S3 Replication":"s3replicate", "S3 Batch Operations":"batch", "S3 Batch Replication":"s3replicate",
   "RDS":"databases", "Aurora":"aurora", "DynamoDB":"dynamodb", "DynamoDB Streams":"dynamodbstreams",
   "ElastiCache":"elasticache", "Redshift":"redshift", "Neptune":"neptune", "DocumentDB":"documentdb",
@@ -10466,6 +10536,7 @@ const RADIAL_CATEGORIES = [
     { n:"FSx", f:["4 flavors: Windows File Server, Lustre, NetApp ONTAP, OpenZFS","Lustre = high-performance computing workloads","Windows File Server supports SMB + Active Directory integration"], uc:"Use to lift-and-shift Windows file shares, or for HPC workloads needing very high-throughput scratch storage." },
     { n:"Storage Gateway", f:["Bridges on-prem to S3/Glacier","3 modes: File Gateway (NFS/SMB to S3), Volume Gateway (iSCSI, cached or stored mode), Tape Gateway (virtual tape library to Glacier)","Cached mode keeps hot data on-prem; stored mode keeps full copy on-prem"], uc:"Use for hybrid setups where an on-prem app needs to read/write to S3/Glacier without rewriting it as cloud-native." },
     { n:"AWS Transfer Family", f:["Managed SFTP/FTPS/FTP(S) endpoints backed by S3 or EFS","For legacy file-transfer workflows that need the actual protocol, not an API","No servers to patch — AWS runs and scales the transfer endpoints"], uc:"Use when external partners or legacy systems must push/pull files over SFTP/FTPS/FTP directly into S3 or EFS." },
+    { n:"DataSync", f:["Online, agent-based sync of on-prem/edge/other-cloud data directly into S3, EFS, or FSx — no S3/Lambda relay hop needed","Scheduled or one-time transfer tasks; encrypted in transit with built-in retry/validation","Reaches AWS privately over Direct Connect (private VIF) or VPN via a PrivateLink interface endpoint for the target service — a gateway endpoint (S3/DynamoDB only) can't front EFS/FSx"], uc:"Use for ongoing or one-time on-prem-to-AWS file migration/sync where the destination is S3, EFS, or FSx — not a one-off manual copy." },
     { n:"S3 Transfer Acceleration", f:["Fast uploads via CloudFront edge locations","Use for globally distributed uploaders","Just a bucket setting — no separate service to configure"], uc:"Use when users worldwide upload large files to one S3 bucket and long-haul internet latency is the bottleneck." },
     { n:"S3 Replication", f:["Automatic, ongoing copy of new objects to another bucket (CRR across regions or SRR in the same region)","Only replicates objects created after the rule is enabled","Requires versioning on both source and destination buckets"], uc:"Use for ongoing disaster recovery, compliance copies, or lower-latency access — but only for objects written going forward." },
     { n:"S3 Batch Operations", f:["Runs one action (copy, tag, ACL, restore, invoke Lambda) across millions/billions of existing objects","Takes a manifest (inventory report or CSV) of objects to act on","Managed, resumable job with a completion report"], uc:"Use to bulk-modify a huge existing set of objects at once instead of writing and running your own iteration script." },
@@ -10574,6 +10645,7 @@ const RADIAL_DOC_URLS = {
   "EBS":"https://aws.amazon.com/ebs/", "EFS":"https://aws.amazon.com/efs/",
   "FSx":"https://aws.amazon.com/fsx/", "Storage Gateway":"https://aws.amazon.com/storagegateway/",
   "AWS Transfer Family":"https://docs.aws.amazon.com/transfer/latest/userguide/what-is-aws-transfer-family.html",
+  "DataSync":"https://aws.amazon.com/datasync/",
   "S3 Transfer Acceleration":"https://aws.amazon.com/s3/transfer-acceleration/",
   "S3 Replication":"https://aws.amazon.com/s3/features/replication/",
   "S3 Batch Operations":"https://aws.amazon.com/s3/features/batch-operations/",
@@ -10653,6 +10725,7 @@ const SERVICE_CONNECTIONS = {
   "FSx": [],
   "Storage Gateway": ["S3","S3 Glacier","EBS","FSx"],
   "AWS Transfer Family": ["S3","EFS","CloudWatch"],
+  "DataSync": ["S3","EFS","FSx"],
   "S3 Transfer Acceleration": ["S3"],
   "AWS Backup": ["EC2","EBS","EKS","RDS","Aurora","DynamoDB","EFS","FSx","Neptune","DocumentDB","Storage Gateway","S3","S3 Glacier","Redshift","Timestream"],
   "RDS": ["ElastiCache","S3","CloudWatch","Aurora","QuickSight","GuardDuty"],
@@ -14766,6 +14839,9 @@ const SANDBOX_ARCH_PATTERNS = [
   { id:"self-service-it-catalog", title:{en:"Self-Service IT Catalog", uk:"Каталог самообслуговування ІТ"},
     services:["Service Catalog","CloudFormation","IAM"],
     blurb:{en:"Admins publish approved CloudFormation templates as a catalog; IAM-permissioned end users launch only pre-vetted, compliant products for themselves.", uk:"Адміністратори публікують схвалені шаблони CloudFormation як каталог; кінцеві користувачі з правами IAM самостійно запускають лише перевірені, відповідні продукти."} },
+  { id:"on-prem-data-sync", title:{en:"On-Premises to Cloud Data Sync", uk:"Синхронізація даних з локальної інфраструктури в хмару"},
+    services:["DataSync","S3","EFS","FSx"],
+    blurb:{en:"A DataSync agent on-premises transfers files directly into S3, EFS, or FSx on a schedule or one-time run — no S3/Lambda relay hop to write or maintain.", uk:"Агент DataSync на локальній інфраструктурі передає файли безпосередньо в S3, EFS чи FSx за розкладом або одноразово — без потреби писати чи підтримувати проміжний перехід через S3/Lambda."} },
 ];
 function sandboxMatchArchPatterns(){
   const names = new Set(sandboxNodes.map(n=>n.name));
@@ -14873,6 +14949,7 @@ const SANDBOX_ARCH_REAL_URLS = {
   "federated-temp-credentials": "https://docs.aws.amazon.com/STS/latest/APIReference/welcome.html",
   "operational-governance": "https://aws.amazon.com/systems-manager/",
   "self-service-it-catalog": "https://aws.amazon.com/servicecatalog/",
+  "on-prem-data-sync": "https://aws.amazon.com/datasync/",
 };
 function sandboxArchDocUrl(pattern, score){
   if(score >= 1 && SANDBOX_ARCH_REAL_URLS[pattern.id]) return SANDBOX_ARCH_REAL_URLS[pattern.id];
