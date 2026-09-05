@@ -4480,7 +4480,7 @@ Which line represents the most dangerous over-grant, effectively letting any dev
  ]},
 {domain:3, topic:"S3 performance for high request rates", q:"An application makes an extremely high rate of GET and PUT requests against a single S3 bucket and wants to maximize achievable request throughput.",
  opts:[
-  {t:"Randomize the object key name prefixes", correct:true, why:"Avoiding sequential prefixes spreads requests across S3's internal partitioning — S3 automatically scales request rate partitioning based on key name patterns, so highly sequential or identical key prefixes can create hot partitions, while varied prefixes let S3 spread load more evenly, supporting much higher aggregate throughput."},
+  {t:"Spread requests across multiple, independent key prefixes", correct:true, why:"Each S3 prefix independently scales to at least 3,500 PUT/COPY/POST/DELETE or 5,500 GET/HEAD requests per second, with no cap on how many prefixes a bucket can have — parallelizing requests across more prefixes is what raises achievable throughput today. (Older guidance to 'randomize' or hash key names to dodge a single hot partition predates a 2018 change to S3's internal partitioning and is no longer necessary or current.)"},
   {t:"Reduce the number of objects in the bucket", correct:false, why:"Object count alone doesn't determine request-rate throughput — key naming patterns and request distribution matter far more for S3's automatic partitioning."},
   {t:"Switch the bucket to a single Availability Zone", correct:false, why:"S3 Standard is already multi-AZ by design for durability — this isn't a lever for increasing request throughput, and 'switching AZs' isn't how S3 buckets work (S3 One Zone-IA is a storage class choice, not a throughput optimization)."},
   {t:"Enable Requester Pays", correct:false, why:"Requester Pays is a billing feature — it has no effect on request throughput performance."},
@@ -6215,7 +6215,7 @@ const QUIZ_UK = [
  ]},
 {domain:3, topic:"Продуктивність S3 при високій частоті запитів", q:"Застосунок виконує надзвичайно високу частоту GET і PUT запитів проти одного бакета S3 і хоче максимізувати досяжну пропускну здатність запитів.",
  opts:[
-  {t:"Рандомізувати префікси назв ключів об'єктів", correct:true, why:"Уникання послідовних префіксів розподіляє запити по внутрішньому партиціонуванню S3 — S3 автоматично масштабує партиціонування частоти запитів на основі патернів імен ключів, тож сильно послідовні чи ідентичні префікси ключів можуть створити гарячі партиції, тоді як різноманітні префікси дозволяють S3 розподіляти навантаження рівномірніше, підтримуючи значно вищу сукупну пропускну здатність."},
+  {t:"Розподілити запити між кількома незалежними префіксами ключів", correct:true, why:"Кожен префікс S3 незалежно масштабується до щонайменше 3500 PUT/COPY/POST/DELETE або 5500 GET/HEAD запитів за секунду, без обмеження на кількість префіксів у бакеті — паралелізація запитів між більшою кількістю префіксів і є тим, що підвищує досяжну пропускну здатність сьогодні. (Старіша порада \"рандомізувати\" чи хешувати імена ключів, щоб уникнути однієї гарячої партиції, передує зміні внутрішнього партиціонування S3 у 2018 році й більше не потрібна й не актуальна.)"},
   {t:"Зменшити кількість об'єктів у бакеті", correct:false, why:"Сама лише кількість об'єктів не визначає пропускну здатність частоти запитів — патерни іменування ключів і розподіл запитів мають значно більше значення для автоматичного партиціонування S3."},
   {t:"Перевести бакет на одну Availability Zone", correct:false, why:"S3 Standard вже за дизайном мульти-AZ для довговічності — це не важіль для збільшення пропускної здатності запитів, і \"перемикання AZ\" не є тим, як працюють бакети S3 (S3 One Zone-IA — це вибір класу зберігання, а не оптимізація пропускної здатності)."},
   {t:"Увімкнути Requester Pays", correct:false, why:"Requester Pays — це функція білінгу — вона не впливає на продуктивність пропускної здатності запитів."},
@@ -8892,9 +8892,9 @@ const CATCH_PAIRS_PERFORMANCE = [
 {id:"cp9", scenario:"A read-heavy DynamoDB table has a small set of \"hot\" items read constantly by many users.",
  opts:[{t:"DAX caching in front of the table", correct:true, why:"Absorbs repeated hot-key reads in a microsecond cache layer, reducing load and latency."},
        {t:"No caching — every read goes straight to DynamoDB", correct:false, why:"Every repeated read of the same hot item still pays full DynamoDB read latency and cost."}]},
-{id:"cp10", scenario:"An S3 bucket with very high request rates uses sequential, date-based key prefixes.",
- opts:[{t:"Randomized/hashed key prefixes distributing requests across partitions", correct:true, why:"Spreads requests evenly, avoiding hot-partition throttling at very high request rates."},
-       {t:"Sequential date-based prefixes", correct:false, why:"Concentrates requests on the same partitions, risking throttling at scale."}]},
+{id:"cp10", scenario:"An S3 bucket with very high request rates uses one single, ever-growing date-based key prefix for everything.",
+ opts:[{t:"Multiple, independent key prefixes parallelized across requests", correct:true, why:"Each prefix independently scales to thousands of requests/sec, with no cap on how many a bucket can have — spreading load across more prefixes raises total throughput."},
+       {t:"One shared prefix for the whole bucket", correct:false, why:"Confines every request to a single prefix's own throughput ceiling instead of parallelizing across several."}]},
 {id:"cp11", scenario:"A media streaming app needs to serve video to users across the globe with minimal buffering.",
  opts:[{t:"CloudFront with regional edge caches", correct:true, why:"Delivers from nearby edge locations, cutting the distance data has to travel."},
        {t:"Streaming directly from a single-region origin server", correct:false, why:"Every viewer streams over a long-haul path to one origin, increasing buffering risk."}]},
@@ -12136,13 +12136,39 @@ function examLoadState(){
   }catch(e){}
 }
 examLoadState();
+// A handful of topics (e.g. "IAM Role Policy"/"IAM Identity Policy") have far more questions
+// than most, all sharing the same "here's a policy JSON, which line does X" template — a plain
+// shuffle-and-slice let pure chance cluster several of those together in one run (measured: 3+
+// from the same topic in ~68% of simulated draws, up to 6 in one run), which reads as the exam
+// repeating itself even though every question is genuinely different. Capping per-topic count
+// forces real subject variety across the 65 questions instead.
+const EXAM_TOPIC_CAP = 3;
 function examSelectQuestions(){
   const byDomain = {1:[], 2:[], 3:[], 4:[]};
   QUIZ_EN.forEach((q,i)=>{ byDomain[q.domain].push(i); });
   Object.keys(byDomain).forEach(d=>{ byDomain[d] = shuffleArrayOnce(byDomain[d]); });
   let indices = [];
   Object.entries(EXAM_DOMAIN_QUOTA).forEach(([d,count])=>{
-    indices = indices.concat(byDomain[d].slice(0, count));
+    const topicCounts = {};
+    const picked = [];
+    byDomain[d].forEach(i=>{
+      if(picked.length >= count) return;
+      const topic = QUIZ_EN[i].topic;
+      if((topicCounts[topic]||0) >= EXAM_TOPIC_CAP) return;
+      picked.push(i);
+      topicCounts[topic] = (topicCounts[topic]||0) + 1;
+    });
+    // If the cap left this domain short of its quota (only possible with very few distinct
+    // topics in that domain), backfill from whatever's left over the cap rather than shipping
+    // an exam with fewer than the intended domain-weighted question count.
+    if(picked.length < count){
+      const pickedSet = new Set(picked);
+      byDomain[d].forEach(i=>{
+        if(picked.length >= count) return;
+        if(!pickedSet.has(i)) picked.push(i);
+      });
+    }
+    indices = indices.concat(picked);
   });
   return shuffleArrayOnce(indices);
 }
