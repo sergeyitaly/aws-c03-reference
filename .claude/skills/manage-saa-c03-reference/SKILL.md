@@ -1,6 +1,6 @@
 ---
 name: manage-saa-c03-reference
-description: How to safely extend and maintain SAA-C03-reference.html — a single-file bilingual (EN/UK) AWS SAA-C03 exam-prep artifact with flashcards, a 100-question quiz, two architecture games, a Sorting Rush drag-and-drop game, and a free-form Sandbox architecture board (98-service catalog, real-connection-only linking, VPC/Subnet grouping, undo/redo, and a 47-pattern curated reference-architecture library covering every catalog service). Use this whenever adding/editing content in that file (new quiz questions, flashcards, falling items, glossary entries, sandbox services, architecture patterns), before publishing it as a Claude Artifact, or when auditing it for out-of-scope AWS services or EN/UK drift.
+description: How to safely extend and maintain SAA-C03-reference.html — a single-file bilingual (EN/UK) AWS SAA-C03 exam-prep artifact with flashcards, a 100-question quiz, two architecture games, a Sorting Rush drag-and-drop game, and a free-form Sandbox architecture board (101-service catalog, real-connection-only linking, VPC/Subnet grouping, undo/redo, and a 48-pattern curated reference-architecture library covering every catalog service). Use this whenever adding/editing content in that file (new quiz questions, flashcards, falling items, glossary entries, sandbox services, architecture patterns), before publishing it as a Claude Artifact, or when auditing it for out-of-scope AWS services or EN/UK drift.
 ---
 
 # Managing SAA-C03-reference.html
@@ -415,13 +415,15 @@ narrow, explicitly-scoped list of documented AWS "path A supersedes path
 B for use case X" pairs, not a generic heuristic.
 
 **The reference-architecture pattern library** (`SANDBOX_ARCH_PATTERNS`,
-47 entries as of the last major addition — every one of the 98 catalog
+48 entries as of the last major addition — every one of the 101 catalog
 services now appears in at least one pattern, closed by a 20-pattern
 sweep plus extending `three-tier`/`hybrid-network` to absorb the 8
 fine-grained VPC/networking primitives — Region, Availability Zone,
 Subnets, Security Groups, Network ACL, NAT Gateway, Internet Gateway,
-VPC Endpoints — that don't warrant standalone patterns of their own) is
-used two ways: **matching**
+VPC Endpoints — that don't warrant standalone patterns of their own; plus
+`On-Premises` and `Snowball` added afterward, wired into `hybrid-network`,
+`database-migration`, and `on-prem-data-sync` rather than as new
+standalone patterns) is used two ways: **matching**
 (`sandboxMatchArchPatterns` scores the current board against every
 pattern by service-name overlap and shows the closest ones) and
 **loading** (`sandboxLoadArchitecture(patternId)` clears the board,
