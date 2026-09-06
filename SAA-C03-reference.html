@@ -538,7 +538,18 @@ mark{ background:var(--accent-3); color:#1a1a2e; padding:0 2px; border-radius:3p
   /* Matches .sandbox-board's own height formula exactly (see below) so the two side-by-side
      panels line up — was a fixed max-height:640px before, independent of the board's height. */
   height:min(70vh,600px); height:min(70svh,600px); min-height:420px;
+  /* The list of 101 services always overflows this height, so it was always scrollable — but a
+     default OS/browser scrollbar can be thin enough to go unnoticed (e.g. macOS's hide-until-
+     scrolling setting), making the panel look like a dead-end rather than a scrollable list.
+     Explicit styling makes the affordance visible at rest, in both themes. */
+  scrollbar-width:thin; scrollbar-color:var(--border) transparent;
 }
+.sandbox-palette::-webkit-scrollbar{ width:9px; }
+.sandbox-palette::-webkit-scrollbar-track{ background:transparent; }
+.sandbox-palette::-webkit-scrollbar-thumb{
+  background:var(--border); border-radius:5px; border:2px solid var(--bg-panel);
+}
+.sandbox-palette::-webkit-scrollbar-thumb:hover{ background:var(--text-dim); }
 .sandbox-palette.sandbox-remove-target{
   background:rgba(220,38,38,.13); border-color:#DC2626;
 }
