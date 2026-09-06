@@ -15008,6 +15008,9 @@ const SANDBOX_ARCH_PATTERNS = [
   { id:"on-prem-data-sync", title:{en:"On-Premises to Cloud Data Transfer: Online vs Offline", uk:"Передача даних з локальної інфраструктури в хмару: онлайн проти офлайн"},
     services:["On-Premises","Direct Connect","DataSync","Snowball","S3","EFS","FSx"],
     blurb:{en:"Two ways off-premises data reaches AWS: a DataSync agent syncs it online over Direct Connect straight into S3/EFS/FSx, or — when the dataset is too large for the network link — a physical Snowball device is shipped, filled, and shipped back to import into S3.", uk:"Два способи потрапляння локальних даних в AWS: агент DataSync синхронізує їх онлайн через Direct Connect прямо в S3/EFS/FSx, або — коли обсяг даних завеликий для мережевого каналу — фізичний пристрій Snowball відправляють, заповнюють і повертають для імпорту в S3."} },
+  { id:"well-architected-production-app", title:{en:"Well-Architected Production Web App", uk:"Виробничий веб-застосунок за Well-Architected Framework"},
+    services:["Route 53","CloudFront","WAF","Shield","VPC","NAT Gateway","ELB","Auto Scaling","EC2","RDS","ElastiCache","S3","VPC Endpoints","KMS","Secrets Manager","GuardDuty","CloudTrail","AWS Backup"],
+    blurb:{en:"One realistic three-tier app that puts a dozen of this reference's own Exam Traps into practice at once: Shield + WAF filtering at the edge before CloudFront/Route 53, a Multi-AZ RDS with ElastiCache absorbing read traffic in front of it, KMS-backed encryption with Secrets Manager for rotated credentials, a Gateway VPC Endpoint so S3 traffic skips NAT Gateway charges entirely, and GuardDuty/CloudTrail/AWS Backup running continuously underneath all of it.", uk:"Один реалістичний тришаровий застосунок, що одразу втілює десяток пасток цього довідника: фільтрація Shield + WAF на межі мережі перед CloudFront/Route 53, RDS Multi-AZ з ElastiCache, що поглинає навантаження читання перед ним, шифрування на основі KMS із Secrets Manager для ротованих облікових даних, Gateway VPC Endpoint, щоб трафік S3 повністю оминав плату NAT Gateway, а GuardDuty/CloudTrail/AWS Backup безперервно працюють в основі всього цього."} },
 ];
 function sandboxMatchArchPatterns(){
   const names = new Set(sandboxNodes.map(n=>n.name));
@@ -15116,6 +15119,7 @@ const SANDBOX_ARCH_REAL_URLS = {
   "operational-governance": "https://aws.amazon.com/systems-manager/",
   "self-service-it-catalog": "https://aws.amazon.com/servicecatalog/",
   "on-prem-data-sync": "https://aws.amazon.com/datasync/",
+  "well-architected-production-app": "https://aws.amazon.com/architecture/well-architected/",
 };
 function sandboxArchDocUrl(pattern, score){
   if(score >= 1 && SANDBOX_ARCH_REAL_URLS[pattern.id]) return SANDBOX_ARCH_REAL_URLS[pattern.id];
