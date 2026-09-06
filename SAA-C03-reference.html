@@ -614,6 +614,19 @@ mark{ background:var(--accent-3); color:#1a1a2e; padding:0 2px; border-radius:3p
   position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
   color:var(--text-dim); font-size:13px; text-align:center; padding:20px; pointer-events:none;
 }
+/* Anchored to .sandbox-board (the fixed viewport), not .sandbox-canvas (the scrollable/zoomable
+   content inside it) — so the title stays centered on-screen regardless of how far the board has
+   been panned or zoomed, instead of sitting at a fixed canvas coordinate the user could scroll
+   away from. display:none by default; sandboxRenderBoardTitle() only reveals it on a 100% match
+   (score>=1 in sandboxMatchArchPatterns — from loading a preset or freely building one). */
+.sandbox-board-match-title{
+  position:absolute; inset:0; display:none; align-items:center; justify-content:center;
+  pointer-events:none; text-align:center; padding:24px; z-index:1;
+}
+.sandbox-board-match-title span{
+  font-size:clamp(16px,3.4vw,30px); font-weight:800; color:var(--accent);
+  opacity:.22; letter-spacing:.4px; line-height:1.3; max-width:85%; text-transform:uppercase;
+}
 .sandbox-links-svg{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
 .sandbox-groups-svg{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
 .sandbox-node{
@@ -646,6 +659,7 @@ mark{ background:var(--accent-3); color:#1a1a2e; padding:0 2px; border-radius:3p
 .sandbox-node-variant{ font-weight:600; opacity:.75; font-size:11.5px; }
 .sandbox-context-menu{
   position:fixed; z-index:2000; min-width:180px; max-width:260px;
+  max-height:min(320px,70vh); overflow-y:auto;
   background:var(--bg-panel); border:1px solid var(--border); border-radius:10px;
   box-shadow:var(--shadow); padding:6px; font-size:12.5px;
 }
@@ -11551,6 +11565,7 @@ function buildApp(){
               <svg class="sandbox-links-svg" id="sandboxLinksSvg"></svg>
               <div class="sandbox-board-empty-hint" id="sandboxEmptyHint">${T("sandboxIntro")}</div>
             </div>
+            <div class="sandbox-board-match-title" id="sandboxBoardMatchTitle"></div>
             <div class="svc-radial-tooltip" id="sandboxNodeTooltip"></div>
           </div>
           <div class="sandbox-info-panel" id="sandboxInfoPanel"></div>
@@ -14703,6 +14718,7 @@ function sandboxRenderBoard(){
   sandboxRenderInfoPanel();
   sandboxRenderWorkflow();
   sandboxRenderArchMatch();
+  sandboxRenderBoardTitle();
   sandboxRenderParked();
   sandboxRefreshZoom();
 }
@@ -15099,6 +15115,24 @@ function sandboxRenderArchMatch(){
     ${bodyHtml}
     <a class="sandbox-workflow-doc-link" href="https://docs.aws.amazon.com/reference-architecture-diagrams/" target="_blank" rel="noopener noreferrer">${T("sandboxArchBrowseLink")}</a>
   `;
+}
+/* Shows the matched pattern's name centered on the board itself whenever the current board is a
+   100% match (score>=1 in sandboxMatchArchPatterns — every one of that pattern's services is
+   present) — whether that came from loading a preset via sandboxLoadArchitecture or from freely
+   placing/linking services that happen to reconstruct one from scratch. Reuses the exact same
+   match computation sandboxRenderArchMatch already runs, so the two never disagree. */
+function sandboxRenderBoardTitle(){
+  const el = document.getElementById("sandboxBoardMatchTitle");
+  if(!el) return;
+  const best = sandboxNodes.length >= 2 ? sandboxMatchArchPatterns()[0] : null;
+  if(best && best.score >= 1){
+    const title = best.pattern.title[currentLang] || best.pattern.title.en;
+    el.innerHTML = `<span>${title}</span>`;
+    el.style.display = "flex";
+  } else {
+    el.innerHTML = "";
+    el.style.display = "none";
+  }
 }
 /* Nodes are freely positioned, and a node's rendered width changes when a variation is added
    (e.g. "RDS" -> "RDS · Multi-AZ"), which can push it into a neighbor it wasn't overlapping
