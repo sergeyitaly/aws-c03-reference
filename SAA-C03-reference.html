@@ -11807,7 +11807,7 @@ function buildApp(){
       if(gameMode!=="sort") sortPauseGame();
       if(gameMode!=="catch") catchPauseGame();
       if(gameMode==="catch") catchEnsureBucketPositioned();
-      if(gameMode==="sandbox"){ sandboxResolveOverlaps(); sandboxRefreshZoom(); }
+      if(gameMode==="sandbox"){ sandboxResolveOverlaps(); sandboxRefreshZoom(); sandboxAlignPaletteBottom(); }
     });
   });
   document.getElementById("gameDesignReset").addEventListener("click", ()=>{
@@ -13975,6 +13975,30 @@ function sandboxSetFitAll(on){
 function sandboxRefreshZoom(){
   if(sandboxFitAll) sandboxFitAllToView(); else sandboxApplyZoom();
 }
+/* The palette sits in the same grid row as .sandbox-board-wrap, but that wrap stacks a HUD row
+   and a controls row ABOVE .sandbox-board, so the board itself starts lower than the palette
+   even though both boxes share the same CSS height — leaving the palette's bottom edge higher
+   up the page than the board's. .sandbox-board-wrap also has more content BELOW the board (info/
+   workflow/arch-match panels), so simply stretching the palette to match the whole wrap's height
+   would overshoot past the board's own bottom — this measures just the header + board and sets
+   that exact pixel height on the palette instead. Desktop-only: the mobile stacked layout (palette
+   above board, not beside it) already resets the palette to its own fixed height via the existing
+   media query, where this alignment is meaningless. Skips silently if anything reads 0 — the
+   same hidden-tab zero-size case sandboxResolveOverlaps/sandboxRefreshZoom already guard against. */
+function sandboxAlignPaletteBottom(){
+  const palette = document.getElementById("sandboxPalette");
+  const wrap = document.querySelector(".sandbox-board-wrap");
+  const hud = document.querySelector(".sandbox-hud");
+  const controls = document.querySelector(".sandbox-controls-row");
+  const board = document.getElementById("sandboxBoard");
+  if(!palette || !wrap || !hud || !controls || !board) return;
+  if(window.innerWidth <= 880){ palette.style.height = ""; return; }
+  const gap = parseFloat(getComputedStyle(wrap).rowGap) || 10;
+  const headerHeight = hud.offsetHeight + controls.offsetHeight + gap*2;
+  const boardHeight = board.offsetHeight;
+  if(headerHeight <= 0 || boardHeight <= 0) return;
+  palette.style.height = (headerHeight + boardHeight) + "px";
+}
 /* SERVICE_CONNECTIONS is now directional — SERVICE_CONNECTIONS[X] lists what X's data/requests
    flow TO (e.g. "Kinesis Data Streams" lists "Kinesis Data Firehose", never the reverse), matching
    real AWS architecture semantics (source -> destination) instead of a symmetric "these two are
@@ -14732,6 +14756,7 @@ function sandboxRenderBoard(){
   sandboxRenderBoardTitle();
   sandboxRenderParked();
   sandboxRefreshZoom();
+  sandboxAlignPaletteBottom();
 }
 function sandboxNodeLabel(node){
   const v = sandboxVariantLabel(node);
@@ -15251,7 +15276,16 @@ function sandboxWireDraggableChip(el, onTap){
    on the palette's own chips, not every sandboxWireDraggableChip caller (e.g. the info panel's
    "commonly connects to" pills stay exactly as they were). */
 function sandboxWirePaletteChip(chip){
-  sandboxWireDraggableChip(chip, (name, el)=> sandboxSetPendingPlace(name, el));
+  sandboxWireDraggableChip(chip, (name, el)=>{
+    sandboxSetPendingPlace(name, el);
+    // Selecting (tapping/clicking) a chip surfaces the same "used in these architectures" list
+    // the 3s hover already shows, positioned by the chip itself rather than a cursor position —
+    // a tap has no in-between mouse position to anchor to, and this also gives touch/keyboard
+    // selection a way to reach it without a hover state at all. sandboxOpenArchHoldMenu already
+    // no-ops silently when the service isn't used in any curated pattern.
+    const rect = el.getBoundingClientRect();
+    sandboxOpenArchHoldMenu(name, rect.right + 8, rect.top);
+  });
   let archHoldTimer = null, archHoldX = 0, archHoldY = 0;
   const clearArchHoldTimer = ()=>{ if(archHoldTimer){ clearTimeout(archHoldTimer); archHoldTimer = null; } };
   chip.addEventListener("mouseenter", (e)=>{
@@ -15393,7 +15427,12 @@ function initSandboxGamePanel(){
   const sandboxInitRenderGen = sandboxRenderGeneration;
   requestAnimationFrame(()=>{
     if(sandboxRenderGeneration === sandboxInitRenderGen) sandboxResolveOverlaps();
+    sandboxAlignPaletteBottom();
   });
+  // Both the header row (controls can wrap to a second line) and the board's own CSS height
+  // (min(70vh,600px)) depend on viewport size, so a live window resize needs the same
+  // recalculation as a tab switch or board re-render.
+  window.addEventListener("resize", sandboxAlignPaletteBottom);
   sandboxWireBoardClick();
   const clearBtn = document.getElementById("sandboxClearBtn");
   if(clearBtn) clearBtn.addEventListener("click", ()=>{ playClick(); sandboxClearBoard(); });
@@ -15475,7 +15514,7 @@ function selectTab(id){
   // right after a reload where Games wasn't the last-open top-level tab) — its node/link/group
   // geometry was computed against a hidden, zero-sized subtree until now, so refresh it against
   // real measurements now that it's actually on screen, instead of requiring a click on it too.
-  if(id==="game" && gameMode==="sandbox") sandboxResolveOverlaps();
+  if(id==="game" && gameMode==="sandbox"){ sandboxResolveOverlaps(); sandboxAlignPaletteBottom(); }
 }
 
 document.getElementById("mobileToggle").addEventListener("click", ()=>{
