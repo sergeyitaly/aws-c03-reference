@@ -1181,7 +1181,8 @@ const UI_STRINGS = {
   sandboxZoomOutBtn: {en:"Zoom out", uk:"Віддалити"},
   sandboxFitAllLabel: {en:"Fit all in view", uk:"Вмістити все на екрані"},
   sandboxSelectedLabel: {en:"Selected", uk:"Обрано"},
-  sandboxConnectsLabel: {en:"Commonly connects to:", uk:"Зазвичай поєднується з:"},
+  sandboxConnectsToLabel: {en:"Connects to →", uk:"Поєднується з →"},
+  sandboxConnectedFromLabel: {en:"← Connected from", uk:"← Поєднання від"},
   sandboxUsedInLabel: {en:"Used in these reference architectures — click to load:", uk:"Використовується в цих еталонних архітектурах — натисни, щоб завантажити:"},
   sandboxNoneSelected: {en:"Nothing selected — click a service on the board to see its common connections.", uk:"Нічого не обрано — натисни на сервіс на дошці, щоб побачити його типові зв'язки."},
   sandboxNodesLabel: {en:"On board", uk:"На дошці"},
@@ -15116,10 +15117,13 @@ function sandboxAlignPaletteBottom(){
    because S3 Glacier's own outgoing list is empty. Only sandboxAddLink/sandboxCanonicalOrder read
    SERVICE_CONNECTIONS[name] one-directionally on purpose, to determine which way the arrow goes;
    every other "what relates to this" UI should call this instead. */
+function sandboxOutgoingServices(name){ return SERVICE_CONNECTIONS[name] || []; }
+function sandboxIncomingServices(name){ return Object.keys(SERVICE_CONNECTIONS).filter(k => SERVICE_CONNECTIONS[k].includes(name)); }
+// Used only where direction doesn't matter (board/palette highlight-as-suggested) — anywhere the
+// UI actually lists connections for a human to read, show sandboxOutgoingServices/IncomingServices
+// as two separate lists instead, so the direction of data/request flow is visible.
 function sandboxRelatedServices(name){
-  const outgoing = SERVICE_CONNECTIONS[name] || [];
-  const incoming = Object.keys(SERVICE_CONNECTIONS).filter(k => SERVICE_CONNECTIONS[k].includes(name));
-  return [...new Set([...outgoing, ...incoming])];
+  return [...new Set([...sandboxOutgoingServices(name), ...sandboxIncomingServices(name)])];
 }
 function sandboxCanonicalOrder(a, b){
   const na = sandboxNodeById(a), nb = sandboxNodeById(b);
@@ -15369,12 +15373,13 @@ function sandboxRenderInfoPanel(){
     return;
   }
   const meta = sandboxFindServiceMeta(selNodeForInfo.name);
-  const connections = sandboxRelatedServices(selNodeForInfo.name);
+  const outgoing = sandboxOutgoingServices(selNodeForInfo.name);
+  const incoming = sandboxIncomingServices(selNodeForInfo.name);
   const factsHtml = meta ? `<ul>${(meta.svc.f||[]).map(f=>`<li>${f}</li>`).join("")}</ul>` : "";
   const ucHtml = meta && meta.svc.uc ? `<div>${meta.svc.uc}</div>` : "";
   const selVariantLabel = sandboxVariantLabel(selNodeForInfo);
   const variantHtml = selVariantLabel ? ` <span class="sandbox-node-variant">· ${selVariantLabel}</span>` : "";
-  const pillsHtml = connections.map(name=>{
+  const renderPills = (list) => list.map(name=>{
     const cmeta = sandboxFindServiceMeta(name);
     const color = cmeta ? cmeta.cat.color : "var(--border)";
     const onBoard = sandboxNodes.some(n=>n.name===name);
@@ -15385,8 +15390,10 @@ function sandboxRenderInfoPanel(){
     <div class="sandbox-info-title" style="color:${meta?meta.cat.color:"inherit"}">${sandboxSelectedName}${variantHtml}</div>
     ${factsHtml}
     ${ucHtml}
-    <div class="sandbox-connects-label">${T("sandboxConnectsLabel")}</div>
-    <div class="sandbox-connects-list">${pillsHtml || `<span class="sandbox-empty-info">—</span>`}</div>
+    <div class="sandbox-connects-label">${T("sandboxConnectsToLabel")}</div>
+    <div class="sandbox-connects-list">${renderPills(outgoing) || `<span class="sandbox-empty-info">—</span>`}</div>
+    <div class="sandbox-connects-label">${T("sandboxConnectedFromLabel")}</div>
+    <div class="sandbox-connects-list">${renderPills(incoming) || `<span class="sandbox-empty-info">—</span>`}</div>
   `;
   panel.querySelectorAll(".sandbox-connect-pill").forEach(pill=>{
     sandboxWireDraggableChip(pill, (name)=> sandboxHandlePillTap(name));
@@ -15793,20 +15800,23 @@ function sandboxCloseHoldMenu(){
 function sandboxOpenHoldMenu(node, clientX, clientY){
   sandboxCloseContextMenu();
   sandboxCloseHoldMenu();
-  const connections = sandboxRelatedServices(node.name);
-  if(!connections.length) return;
+  const outgoing = sandboxOutgoingServices(node.name);
+  const incoming = sandboxIncomingServices(node.name);
+  if(!outgoing.length && !incoming.length) return;
   const menu = document.createElement("div");
   menu.className = "sandbox-context-menu";
   menu.style.left = clientX+"px";
   menu.style.top = clientY+"px";
-  const itemsHtml = connections.map(name=>{
+  const renderItems = (list) => list.map(name=>{
     const cmeta = sandboxFindServiceMeta(name);
     const color = cmeta ? cmeta.cat.color : "var(--border)";
     const onBoard = sandboxNodes.some(n=>n.name===name);
     const icon = svcServiceIconSvg(name, color, 15);
     return `<div class="sandbox-hold-item${onBoard?" sandbox-hold-item-onboard":""}" data-service="${name}">${icon}<span>${name}</span></div>`;
   }).join("");
-  menu.innerHTML = `<div class="sandbox-context-title">${T("sandboxConnectsLabel")}</div>${itemsHtml}`;
+  const outgoingHtml = outgoing.length ? `<div class="sandbox-context-title">${T("sandboxConnectsToLabel")}</div>${renderItems(outgoing)}` : "";
+  const incomingHtml = incoming.length ? `<div class="sandbox-context-title">${T("sandboxConnectedFromLabel")}</div>${renderItems(incoming)}` : "";
+  menu.innerHTML = outgoingHtml + incomingHtml;
   document.body.appendChild(menu);
   sandboxHoldMenuEl = menu;
   menu.querySelectorAll("[data-service]").forEach(item=>{
