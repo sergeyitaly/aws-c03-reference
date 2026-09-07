@@ -11829,7 +11829,7 @@ const SERVICE_CONNECTIONS = {
   "Global Accelerator": ["ELB","EC2"],
   "SQS": ["Lambda","EC2"],
   "SNS": ["SQS","Lambda","Kinesis Data Firehose"],
-  "EventBridge": ["Lambda","SQS","SNS","Step Functions","Kinesis Data Firehose","MQ"],
+  "EventBridge": ["Lambda","SQS","SNS","Step Functions","Kinesis Data Firehose","MQ","SageMaker"],
   "Step Functions": ["Lambda","SQS","SNS","DynamoDB"],
   "AppSync": ["Lambda","DynamoDB","Cognito"],
   "MQ": ["Lambda","VPC"],
@@ -16159,6 +16159,9 @@ const SANDBOX_ARCH_PATTERNS = [
   { id:"aurora-serverless-variable-load", title:{en:"Cost-Optimized Variable-Load Relational Database", uk:"Економічно оптимізована реляційна БД для змінного навантаження"},
     services:["Aurora","Lambda","API Gateway","CloudWatch"],
     blurb:{en:"An intermittent internal tool's API runs on Lambda behind API Gateway against an Aurora Serverless database, which scales capacity up in seconds under load and back down to near-zero (including auto-pause) when idle — instead of paying for a provisioned instance sized for peak load and running 24/7 for a workload that's mostly quiet. CloudWatch tracks the automatic capacity scaling.", uk:"API нечасто використовуваного внутрішнього інструмента працює на Lambda за API Gateway до бази даних Aurora Serverless, яка масштабує потужність за секунди під навантаженням і повертається майже до нуля (включно з авто-паузою) у стані спокою — замість оплати виділеного інстансу, розрахованого на пікове навантаження й запущеного 24/7 для здебільшого тихого навантаження. CloudWatch відстежує автоматичне масштабування потужності."} },
+  { id:"s3-replication-eventbridge-fanout", title:{en:"Automated Cross-Bucket Copy with EventBridge Fan-Out", uk:"Автоматичне копіювання між бакетами з розгалуженням через EventBridge"},
+    services:["S3","S3 Replication","S3 Event Notifications","EventBridge","Lambda","SageMaker"],
+    blurb:{en:"Files landing in an initial S3 bucket are automatically copied into an analysis bucket via S3 Replication — no manual copying and no custom copy-and-dispatch Lambda to write or run. The analysis bucket's S3 Event Notifications route ObjectCreated events to EventBridge (S3's one allowed destination type per notification config), and a single EventBridge rule fans out to both a Lambda function running pattern-matching code and a SageMaker Pipelines pipeline — EventBridge natively supports a SageMaker Pipeline as a rule target, which is exactly how this sidesteps S3's one-destination-type limit with the least operational overhead.", uk:"Файли, що потрапляють у початковий бакет S3, автоматично копіюються в аналітичний бакет через S3 Replication — без ручного копіювання й без власної Lambda для копіювання та розсилки. S3 Event Notifications аналітичного бакета спрямовують події ObjectCreated в EventBridge (єдиний дозволений тип призначення S3 для одної конфігурації сповіщень), а єдине правило EventBridge розгалужується одразу на функцію Lambda з кодом пошуку патернів і на пайплайн SageMaker Pipelines — EventBridge нативно підтримує SageMaker Pipeline як ціль правила, і саме так це обходить обмеження S3 на один тип призначення з найменшими операційними витратами."} },
 ];
 function sandboxMatchArchPatterns(){
   const names = new Set(sandboxNodes.map(n=>n.name));
@@ -16272,6 +16275,7 @@ const SANDBOX_ARCH_REAL_URLS = {
   "scheduled-nonprod-shutdown": "https://aws.amazon.com/solutions/implementations/instance-scheduler-on-aws/",
   "s3-lifecycle-cost-tiering": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html",
   "aurora-serverless-variable-load": "https://aws.amazon.com/rds/aurora/serverless/",
+  "s3-replication-eventbridge-fanout": "https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-targets.html",
 };
 function sandboxArchDocUrl(pattern, score){
   if(score >= 1 && SANDBOX_ARCH_REAL_URLS[pattern.id]) return SANDBOX_ARCH_REAL_URLS[pattern.id];
