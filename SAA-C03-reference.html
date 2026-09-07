@@ -14705,15 +14705,21 @@ function sandboxRenderLinks(){
     const na = sandboxNodes.find(n=>n.id===a);
     const nb = sandboxNodes.find(n=>n.id===b);
     if(!na || !nb) return;
-    // Pull the arrow's tip back off the target node's center so the arrowhead lands just outside
-    // the node box instead of hidden underneath its icon/label.
+    // Both node.x/y are the node's true CENTER point (.sandbox-node is centered on it via
+    // transform:translate(-50%,-50%)), so a line drawn straight center-to-center runs its first
+    // and last few pixels directly underneath each node's own opaque box — invisible, since nodes
+    // paint above the links SVG. Pull BOTH ends back off center, not just the target, so the
+    // visible line actually starts and ends right at each node's border instead of vanishing
+    // under it — recomputed from live node.x/y on every render, so this holds after every drag.
     const dx = nb.x-na.x, dy = nb.y-na.y;
     const dist = Math.hypot(dx, dy) || 1;
     const pullback = Math.min(45, dist*0.4);
+    const sx = na.x + (dx/dist)*pullback;
+    const sy = na.y + (dy/dist)*pullback;
     const ex = nb.x - (dx/dist)*pullback;
     const ey = nb.y - (dy/dist)*pullback;
     const line = document.createElementNS("http://www.w3.org/2000/svg","line");
-    line.setAttribute("x1", na.x); line.setAttribute("y1", na.y);
+    line.setAttribute("x1", sx); line.setAttribute("y1", sy);
     line.setAttribute("x2", ex); line.setAttribute("y2", ey);
     line.setAttribute("stroke-width", "2");
     line.style.stroke = "var(--accent)";
