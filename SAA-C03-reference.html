@@ -810,6 +810,32 @@ mark{ background:var(--accent-3); color:#1a1a2e; padding:0 2px; border-radius:3p
 }
 .exam-timer{ font-size:18px; font-weight:800; font-variant-numeric:tabular-nums; color:var(--accent); }
 .exam-counter{ font-size:12.5px; color:var(--text-dim); font-weight:600; }
+.exam-generating{
+  background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius);
+  padding:28px 24px; text-align:center; box-shadow:var(--shadow);
+}
+.exam-generating h3{ margin:0 0 14px; }
+.exam-gen-status{ font-size:13px; color:var(--text-dim); margin-bottom:14px; min-height:18px; font-weight:600; }
+.exam-gen-bar{
+  width:100%; max-width:420px; height:8px; border-radius:6px; background:var(--bg-card);
+  margin:0 auto 20px; overflow:hidden;
+}
+.exam-gen-bar-fill{
+  height:100%; width:0%; border-radius:6px; background:var(--accent);
+  transition:width .25s ease;
+}
+.exam-gen-domains{
+  display:flex; flex-direction:column; gap:8px; max-width:420px; margin:0 auto; text-align:left;
+}
+.exam-gen-domain{
+  display:flex; align-items:center; gap:10px; font-size:12.5px; padding:8px 12px;
+  border-radius:9px; background:var(--bg-card); opacity:.5; transition:opacity .2s ease;
+}
+.exam-gen-domain.done{ opacity:1; }
+.exam-gen-domain-dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.exam-gen-domain-name{ flex:1; font-weight:600; }
+.exam-gen-domain-count{ font-weight:800; font-variant-numeric:tabular-nums; color:var(--text-dim); }
+.exam-gen-domain.done .exam-gen-domain-count{ color:var(--accent); }
 .exam-results{
   background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius);
   padding:28px 24px; text-align:center; box-shadow:var(--shadow);
@@ -1018,6 +1044,11 @@ const UI_STRINGS = {
   examIntroBody: {en:"65 questions, 130 minutes, no answer feedback until you submit — just like the real SAA-C03. Questions are drawn to roughly match the real domain weighting (Secure 30%, Resilient 26%, High-Performing 24%, Cost-Optimized 20%). You can move between questions freely before submitting.",
                   uk:"65 питань, 130 хвилин, без підказок щодо правильності відповіді до самого завершення — так само, як на реальному SAA-C03. Питання підібрані так, щоб приблизно відповідати реальній вазі доменів (Secure 30%, Resilient 26%, High-Performing 24%, Cost-Optimized 20%). Можна вільно переходити між питаннями до завершення."},
   examStartBtn: {en:"Start Exam", uk:"Почати іспит"},
+  examGeneratingTitle: {en:"Building your exam…", uk:"Формуємо твій іспит…"},
+  examGenScanning: {en:"Scanning the question bank ({total} questions)…", uk:"Сканування банку питань ({total} питань)…"},
+  examGenDomain: {en:"Selecting {domain}: {picked}/{quota}", uk:"Підбір домену «{domain}»: {picked}/{quota}"},
+  examGenShuffling: {en:"Shuffling final question order…", uk:"Перемішування фінального порядку питань…"},
+  examGenDone: {en:"Exam ready — {total} questions", uk:"Іспит готовий — {total} питань"},
   examSubmitBtn: {en:"Submit Exam", uk:"Завершити іспит"},
   examSubmitConfirm: {en:"Submit your exam now? You won't be able to change any answers after this.", uk:"Завершити іспит зараз? Після цього не можна буде змінити жодну відповідь."},
   examQuestionOf: {en:"Question {n} of {total}", uk:"Питання {n} з {total}"},
@@ -13087,45 +13118,124 @@ examLoadState();
 // repeating itself even though every question is genuinely different. Capping per-topic count
 // forces real subject variety across the 65 questions instead.
 const EXAM_TOPIC_CAP = 3;
+// Shared by both the plain selector and the progress-reporting one below, so the two can never
+// drift apart into picking questions by different rules.
+function examPickDomainQuestions(domainIndices, count){
+  const topicCounts = {};
+  const picked = [];
+  domainIndices.forEach(i=>{
+    if(picked.length >= count) return;
+    const topic = QUIZ_EN[i].topic;
+    if((topicCounts[topic]||0) >= EXAM_TOPIC_CAP) return;
+    picked.push(i);
+    topicCounts[topic] = (topicCounts[topic]||0) + 1;
+  });
+  // If the cap left this domain short of its quota (only possible with very few distinct
+  // topics in that domain), backfill from whatever's left over the cap rather than shipping
+  // an exam with fewer than the intended domain-weighted question count.
+  if(picked.length < count){
+    const pickedSet = new Set(picked);
+    domainIndices.forEach(i=>{
+      if(picked.length >= count) return;
+      if(!pickedSet.has(i)) picked.push(i);
+    });
+  }
+  return picked;
+}
 function examSelectQuestions(){
   const byDomain = {1:[], 2:[], 3:[], 4:[]};
   QUIZ_EN.forEach((q,i)=>{ byDomain[q.domain].push(i); });
   Object.keys(byDomain).forEach(d=>{ byDomain[d] = shuffleArrayOnce(byDomain[d]); });
   let indices = [];
   Object.entries(EXAM_DOMAIN_QUOTA).forEach(([d,count])=>{
-    const topicCounts = {};
-    const picked = [];
-    byDomain[d].forEach(i=>{
-      if(picked.length >= count) return;
-      const topic = QUIZ_EN[i].topic;
-      if((topicCounts[topic]||0) >= EXAM_TOPIC_CAP) return;
-      picked.push(i);
-      topicCounts[topic] = (topicCounts[topic]||0) + 1;
-    });
-    // If the cap left this domain short of its quota (only possible with very few distinct
-    // topics in that domain), backfill from whatever's left over the cap rather than shipping
-    // an exam with fewer than the intended domain-weighted question count.
-    if(picked.length < count){
-      const pickedSet = new Set(picked);
-      byDomain[d].forEach(i=>{
-        if(picked.length >= count) return;
-        if(!pickedSet.has(i)) picked.push(i);
-      });
-    }
-    indices = indices.concat(picked);
+    indices = indices.concat(examPickDomainQuestions(byDomain[d], count));
   });
   return shuffleArrayOnce(indices);
+}
+function examSleep(ms){ return new Promise(resolve=>setTimeout(resolve, ms)); }
+// Generates the exact same exam set as examSelectQuestions(), but stage-by-stage with a callback
+// after each real step (scan -> per-domain pick -> final shuffle), so the "Start Exam" screen can
+// show genuine progress through the full question bank instead of the set just appearing instantly.
+async function examSelectQuestionsWithProgress(onProgress){
+  const byDomain = {1:[], 2:[], 3:[], 4:[]};
+  QUIZ_EN.forEach((q,i)=>{ byDomain[q.domain].push(i); });
+  onProgress({phase:"scan", totalQuestions: QUIZ_EN.length});
+  await examSleep(300);
+  Object.keys(byDomain).forEach(d=>{ byDomain[d] = shuffleArrayOnce(byDomain[d]); });
+  let indices = [];
+  const domainIds = Object.keys(EXAM_DOMAIN_QUOTA).map(Number);
+  for(let idx=0; idx<domainIds.length; idx++){
+    const d = domainIds[idx];
+    const count = EXAM_DOMAIN_QUOTA[d];
+    const picked = examPickDomainQuestions(byDomain[d], count);
+    indices = indices.concat(picked);
+    onProgress({phase:"domain", domain:d, picked:picked.length, quota:count, domainsDone:idx+1, domainsTotal:domainIds.length});
+    await examSleep(280);
+  }
+  onProgress({phase:"shuffle"});
+  await examSleep(220);
+  const finalIndices = shuffleArrayOnce(indices);
+  onProgress({phase:"done", total: finalIndices.length});
+  return finalIndices;
 }
 function examGetQuestion(enIndex){
   return currentLang==="uk" ? QUIZ_UK[enIndex] : QUIZ_EN[enIndex];
 }
-function examStart(){
-  examQuestionIndices = examSelectQuestions();
+function renderExamGenerating(){
+  const container = document.getElementById("quizExamPanel");
+  if(!container) return;
+  const domainIds = Object.keys(EXAM_DOMAIN_QUOTA).map(Number);
+  container.innerHTML = `
+    <div class="exam-generating">
+      <h3>${T("examGeneratingTitle")}</h3>
+      <div class="exam-gen-status" id="examGenStatus"></div>
+      <div class="exam-gen-bar"><div class="exam-gen-bar-fill" id="examGenBarFill"></div></div>
+      <div class="exam-gen-domains">
+        ${domainIds.map(d=>`
+          <div class="exam-gen-domain" data-domain="${d}">
+            <span class="exam-gen-domain-dot" style="background:${DOMAIN_COLOR[d]}"></span>
+            <span class="exam-gen-domain-name">${DOMAIN_NAME[d][currentLang]}</span>
+            <span class="exam-gen-domain-count" id="examGenDomainCount${d}">0/${EXAM_DOMAIN_QUOTA[d]}</span>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+function examUpdateGeneratingProgress(state){
+  const statusEl = document.getElementById("examGenStatus");
+  const fillEl = document.getElementById("examGenBarFill");
+  if(!statusEl || !fillEl) return;
+  let pct = 0;
+  if(state.phase === "scan"){
+    statusEl.textContent = T("examGenScanning").replace("{total}", state.totalQuestions);
+    pct = 5;
+  } else if(state.phase === "domain"){
+    const domainName = DOMAIN_NAME[state.domain][currentLang];
+    statusEl.textContent = T("examGenDomain").replace("{domain}", domainName).replace("{picked}", state.picked).replace("{quota}", state.quota);
+    const countEl = document.getElementById("examGenDomainCount"+state.domain);
+    if(countEl) countEl.textContent = state.picked + "/" + state.quota;
+    const rowEl = document.querySelector('.exam-gen-domain[data-domain="'+state.domain+'"]');
+    if(rowEl) rowEl.classList.add("done");
+    pct = 10 + (state.domainsDone/state.domainsTotal)*75;
+  } else if(state.phase === "shuffle"){
+    statusEl.textContent = T("examGenShuffling");
+    pct = 90;
+  } else if(state.phase === "done"){
+    statusEl.textContent = T("examGenDone").replace("{total}", state.total);
+    pct = 100;
+  }
+  fillEl.style.width = pct + "%";
+}
+async function examStart(){
   examAnswers = {};
   examCurrentIdx = 0;
-  examEndTime = Date.now() + EXAM_DURATION_MIN*60*1000;
   examSubmitted = false;
   examTimedOut = false;
+  renderExamGenerating();
+  const indices = await examSelectQuestionsWithProgress(examUpdateGeneratingProgress);
+  examQuestionIndices = indices;
+  examEndTime = Date.now() + EXAM_DURATION_MIN*60*1000;
   examSaveState();
   renderExamPanel();
 }
