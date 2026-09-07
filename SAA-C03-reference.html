@@ -656,7 +656,10 @@ mark{ background:var(--accent-3); color:#1a1a2e; padding:0 2px; border-radius:3p
 .sandbox-info-title{ font-weight:800; font-size:14px; margin-bottom:6px; }
 .sandbox-info-panel ul{ margin:4px 0 8px; padding-left:18px; font-size:12.5px; }
 .sandbox-info-panel li{ margin-bottom:3px; }
-.sandbox-connects-label{ font-size:11px; text-transform:uppercase; letter-spacing:.4px; font-weight:800; color:var(--text-dim); margin:8px 0 5px; }
+.sandbox-connects-group{ border-radius:10px; padding:8px 10px; margin-top:8px; }
+.sandbox-connects-group.outgoing{ background:rgba(91,71,224,.08); border:1px solid rgba(91,71,224,.22); }
+.sandbox-connects-group.incoming{ background:rgba(14,165,165,.08); border:1px solid rgba(14,165,165,.22); }
+.sandbox-connects-label{ font-size:11px; text-transform:uppercase; letter-spacing:.4px; font-weight:800; color:var(--text-dim); margin:0 0 5px; }
 .sandbox-connects-list{ display:flex; flex-wrap:wrap; gap:6px; }
 .sandbox-connect-pill{
   display:inline-flex; align-items:center; gap:5px;
@@ -687,6 +690,10 @@ mark{ background:var(--accent-3); color:#1a1a2e; padding:0 2px; border-radius:3p
 .sandbox-hold-item:hover{ background:var(--tab-hover); }
 .sandbox-hold-item svg{ flex-shrink:0; }
 .sandbox-hold-item-onboard{ opacity:.6; }
+.sandbox-hold-group{ border-radius:8px; padding:4px; }
+.sandbox-hold-group+.sandbox-hold-group{ margin-top:4px; }
+.sandbox-hold-group.outgoing{ background:rgba(91,71,224,.08); }
+.sandbox-hold-group.incoming{ background:rgba(14,165,165,.08); }
 .sandbox-workflow-panel{
   background:var(--bg-panel); border:1px solid var(--border); border-radius:12px; padding:12px 16px;
 }
@@ -15390,10 +15397,14 @@ function sandboxRenderInfoPanel(){
     <div class="sandbox-info-title" style="color:${meta?meta.cat.color:"inherit"}">${sandboxSelectedName}${variantHtml}</div>
     ${factsHtml}
     ${ucHtml}
-    <div class="sandbox-connects-label">${T("sandboxConnectsToLabel")}</div>
-    <div class="sandbox-connects-list">${renderPills(outgoing) || `<span class="sandbox-empty-info">—</span>`}</div>
-    <div class="sandbox-connects-label">${T("sandboxConnectedFromLabel")}</div>
-    <div class="sandbox-connects-list">${renderPills(incoming) || `<span class="sandbox-empty-info">—</span>`}</div>
+    <div class="sandbox-connects-group outgoing">
+      <div class="sandbox-connects-label">${T("sandboxConnectsToLabel")}</div>
+      <div class="sandbox-connects-list">${renderPills(outgoing) || `<span class="sandbox-empty-info">—</span>`}</div>
+    </div>
+    <div class="sandbox-connects-group incoming">
+      <div class="sandbox-connects-label">${T("sandboxConnectedFromLabel")}</div>
+      <div class="sandbox-connects-list">${renderPills(incoming) || `<span class="sandbox-empty-info">—</span>`}</div>
+    </div>
   `;
   panel.querySelectorAll(".sandbox-connect-pill").forEach(pill=>{
     sandboxWireDraggableChip(pill, (name)=> sandboxHandlePillTap(name));
@@ -15814,8 +15825,8 @@ function sandboxOpenHoldMenu(node, clientX, clientY){
     const icon = svcServiceIconSvg(name, color, 15);
     return `<div class="sandbox-hold-item${onBoard?" sandbox-hold-item-onboard":""}" data-service="${name}">${icon}<span>${name}</span></div>`;
   }).join("");
-  const outgoingHtml = outgoing.length ? `<div class="sandbox-context-title">${T("sandboxConnectsToLabel")}</div>${renderItems(outgoing)}` : "";
-  const incomingHtml = incoming.length ? `<div class="sandbox-context-title">${T("sandboxConnectedFromLabel")}</div>${renderItems(incoming)}` : "";
+  const outgoingHtml = outgoing.length ? `<div class="sandbox-hold-group outgoing"><div class="sandbox-context-title">${T("sandboxConnectsToLabel")}</div>${renderItems(outgoing)}</div>` : "";
+  const incomingHtml = incoming.length ? `<div class="sandbox-hold-group incoming"><div class="sandbox-context-title">${T("sandboxConnectedFromLabel")}</div>${renderItems(incoming)}</div>` : "";
   menu.innerHTML = outgoingHtml + incomingHtml;
   document.body.appendChild(menu);
   sandboxHoldMenuEl = menu;
