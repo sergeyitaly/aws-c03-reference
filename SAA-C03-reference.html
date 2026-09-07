@@ -836,6 +836,22 @@ mark{ background:var(--accent-3); color:#1a1a2e; padding:0 2px; border-radius:3p
 .exam-gen-domain-name{ flex:1; font-weight:600; }
 .exam-gen-domain-count{ font-weight:800; font-variant-numeric:tabular-nums; color:var(--text-dim); }
 .exam-gen-domain.done .exam-gen-domain-count{ color:var(--accent); }
+.exam-cheat-badge{
+  font-size:12px; font-weight:800; padding:4px 10px; border-radius:20px;
+  background:rgba(220,38,38,.14); color:#DC2626; cursor:default;
+}
+.exam-cheat-toast{
+  position:fixed; top:16px; left:50%; transform:translateX(-50%) translateY(-140%);
+  z-index:9999; max-width:min(90vw,420px); background:var(--bg-panel); border:1.5px solid #DC2626;
+  border-radius:12px; padding:12px 16px; box-shadow:0 8px 24px rgba(0,0,0,.25);
+  opacity:0; transition:transform .25s ease, opacity .25s ease; pointer-events:none;
+}
+.exam-cheat-toast.show{ transform:translateX(-50%) translateY(0); opacity:1; }
+.exam-cheat-toast-title{ font-weight:800; color:#DC2626; margin-bottom:4px; font-size:13.5px; }
+.exam-cheat-toast-body{ font-size:12.5px; color:var(--text-dim); line-height:1.5; }
+.exam-cheat-note{ text-align:left; font-size:12.5px; line-height:1.5; padding:10px 14px; border-radius:10px; margin-bottom:16px; }
+.exam-cheat-note.warn{ background:rgba(220,38,38,.1); color:#DC2626; }
+.exam-cheat-note.ok{ background:rgba(22,163,74,.1); color:#16A34A; }
 .exam-results{
   background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius);
   padding:28px 24px; text-align:center; box-shadow:var(--shadow);
@@ -1049,6 +1065,12 @@ const UI_STRINGS = {
   examGenDomain: {en:"Selecting {domain}: {picked}/{quota}", uk:"Підбір домену «{domain}»: {picked}/{quota}"},
   examGenShuffling: {en:"Shuffling final question order…", uk:"Перемішування фінального порядку питань…"},
   examGenDone: {en:"Exam ready — {total} questions", uk:"Іспит готовий — {total} питань"},
+  examCheatBadgeTitle: {en:"{n} tab/window switch warning(s) recorded during this exam", uk:"{n} попередження про перемикання вкладки/вікна зафіксовано під час цього іспиту"},
+  examCheatToastTitle: {en:"⚠️ Focus lost", uk:"⚠️ Втрачено фокус"},
+  examCheatToastBody: {en:"You switched away from the exam for about {s}s (warning #{n}). This is recorded — real online-proctored SAA-C03 exams flag this as suspicious activity too.", uk:"Ти залишив(-ла) іспит приблизно на {s}с (попередження №{n}). Це зафіксовано — реальні онлайн-іспити SAA-C03 з проктерингом так само позначають це як підозрілу активність."},
+  examResultsCheatTitle: {en:"Proctoring notes", uk:"Нотатки прокторингу"},
+  examResultsCheatBody: {en:"You switched away from the exam tab/window {n} time(s), about {s}s total. On a real proctored exam, this kind of activity can be flagged for review.", uk:"Ти перемикався(-лась) з вкладки/вікна іспиту {n} раз(и), загалом близько {s}с. На реальному іспиті з прокторингом така активність може бути позначена для перевірки."},
+  examResultsCheatNone: {en:"No tab/window switches detected — full focus maintained throughout. 👍", uk:"Перемикань вкладки/вікна не виявлено — фокус утримувався протягом усього іспиту. 👍"},
   examSubmitBtn: {en:"Submit Exam", uk:"Завершити іспит"},
   examSubmitConfirm: {en:"Submit your exam now? You won't be able to change any answers after this.", uk:"Завершити іспит зараз? Після цього не можна буде змінити жодну відповідь."},
   examQuestionOf: {en:"Question {n} of {total}", uk:"Питання {n} з {total}"},
@@ -13084,6 +13106,7 @@ let examEndTime = null;       // absolute ms timestamp; countdown is computed fr
 let examSubmitted = false;
 let examTimedOut = false;
 let examTimerHandle = null;
+let examCheatEvents = []; // {time, durationMs} — each real tab-switch/window-hide during an active exam
 
 function examSaveState(){
   try{
@@ -13094,6 +13117,7 @@ function examSaveState(){
       endTime: examEndTime,
       submitted: examSubmitted,
       timedOut: examTimedOut,
+      cheatEvents: examCheatEvents,
     }));
   }catch(e){}
 }
@@ -13107,6 +13131,7 @@ function examLoadState(){
       examEndTime = saved.endTime;
       examSubmitted = !!saved.submitted;
       examTimedOut = !!saved.timedOut;
+      examCheatEvents = Array.isArray(saved.cheatEvents) ? saved.cheatEvents : [];
     }
   }catch(e){}
 }
@@ -13232,6 +13257,8 @@ async function examStart(){
   examCurrentIdx = 0;
   examSubmitted = false;
   examTimedOut = false;
+  examCheatEvents = [];
+  examCheatAwaySince = null;
   renderExamGenerating();
   const indices = await examSelectQuestionsWithProgress(examUpdateGeneratingProgress);
   examQuestionIndices = indices;
@@ -13258,6 +13285,64 @@ function examStartTimer(){
   if(examTimerHandle) clearInterval(examTimerHandle);
   examTimerHandle = setInterval(examTick, 1000);
   examTick();
+}
+/* ---- Anti-cheating: flag leaving the exam tab/window, like real online-proctored exams do ----
+   The browser genuinely cannot be prevented from switching tabs or minimizing from page JS (and
+   shouldn't be — that's a security boundary, not a bug), so this can only detect and record it,
+   not block it. Detection combines the Page Visibility API (catches switching to another tab) and
+   window blur/focus (catches alt-tabbing to another app, which doesn't always flip document.hidden
+   in every browser) behind a single examCheatAway state so the same real-world event firing both
+   listeners at once is recorded exactly once, not twice. */
+let examCheatAwaySince = null;
+function examIsActive(){
+  return quizMode === "exam" && examQuestionIndices.length > 0 && !examSubmitted;
+}
+function examHandleCheatLeave(){
+  if(!examIsActive() || examCheatAwaySince) return;
+  examCheatAwaySince = Date.now();
+}
+function examHandleCheatReturn(){
+  if(examCheatAwaySince === null) return;
+  const awaySince = examCheatAwaySince;
+  examCheatAwaySince = null;
+  if(!examIsActive()) return;
+  const durationMs = Date.now() - awaySince;
+  if(durationMs < 400) return; // ignore split-second focus flicker (e.g. an OS notification)
+  examCheatEvents.push({ time: awaySince, durationMs });
+  examSaveState();
+  examUpdateCheatBadge();
+  examShowCheatToast(examCheatEvents.length, durationMs);
+}
+document.addEventListener("visibilitychange", ()=>{
+  if(document.hidden) examHandleCheatLeave(); else examHandleCheatReturn();
+});
+window.addEventListener("blur", examHandleCheatLeave);
+window.addEventListener("focus", examHandleCheatReturn);
+function examUpdateCheatBadge(){
+  const badge = document.getElementById("examCheatBadge");
+  if(!badge) return;
+  const n = examCheatEvents.length;
+  if(n <= 0){ badge.hidden = true; return; }
+  badge.hidden = false;
+  badge.textContent = "⚠️ " + n;
+  badge.title = T("examCheatBadgeTitle").replace("{n}", n);
+}
+function examShowCheatToast(n, durationMs){
+  const seconds = Math.max(1, Math.round(durationMs/1000));
+  let toast = document.getElementById("examCheatToast");
+  if(!toast){
+    toast = document.createElement("div");
+    toast.id = "examCheatToast";
+    toast.className = "exam-cheat-toast";
+    document.body.appendChild(toast);
+  }
+  toast.innerHTML = `
+    <div class="exam-cheat-toast-title">${T("examCheatToastTitle")}</div>
+    <div class="exam-cheat-toast-body">${T("examCheatToastBody").replace("{n}", n).replace("{s}", seconds)}</div>
+  `;
+  toast.classList.add("show");
+  clearTimeout(toast._hideTimer);
+  toast._hideTimer = setTimeout(()=>{ toast.classList.remove("show"); }, 6000);
 }
 // examAnswers stores each pick by OPTION TEXT, not the shuffle-assigned k letter. The shuffle-then-
 // relabel pass that assigns k runs once per page load, so a k letter saved before a reload (exam
@@ -13351,6 +13436,8 @@ function examResetToIntro(){
   examEndTime = null;
   examSubmitted = false;
   examTimedOut = false;
+  examCheatEvents = [];
+  examCheatAwaySince = null;
   try{ localStorage.removeItem("saa-exam-state"); }catch(e){}
   renderExamPanel();
 }
@@ -13405,6 +13492,11 @@ function examRenderResults(container){
       <span class="quiz-summary-domain-score">${s.correct} / ${s.total} (${dPct}%)</span>
     </div>`;
   }).join("");
+  const cheatCount = examCheatEvents.length;
+  const cheatTotalSec = Math.round(examCheatEvents.reduce((sum,e)=>sum+e.durationMs,0)/1000);
+  const cheatSection = cheatCount > 0
+    ? `<div class="exam-cheat-note warn"><b>${T("examResultsCheatTitle")}:</b> ${T("examResultsCheatBody").replace("{n}", cheatCount).replace("{s}", cheatTotalSec)}</div>`
+    : `<div class="exam-cheat-note ok"><b>${T("examResultsCheatTitle")}:</b> ${T("examResultsCheatNone")}</div>`;
   container.innerHTML = `
     <div class="exam-results">
       <h3>${T("examResultsTitle")}</h3>
@@ -13412,6 +13504,7 @@ function examRenderResults(container){
       <div class="exam-results-score">${correct} / ${EXAM_QUESTION_COUNT}</div>
       <div class="exam-results-pct">${pct}%</div>
       <div class="exam-results-pass ${passed?"pass":"fail"}">${passed?T("examPassLabel"):T("examFailLabel")}</div>
+      ${cheatSection}
       <h4 class="exam-results-breakdown-title">${T("examDomainBreakdown")}</h4>
       <div class="quiz-summary-domains">${domainRows}</div>
       ${examRenderMissedSection(examComputeMissedList())}
@@ -13456,6 +13549,7 @@ function renderExamPanel(){
     <div class="exam-hud">
       <span class="exam-timer" id="examTimer">--:--:--</span>
       <span class="exam-counter" id="examCounter"></span>
+      <span class="exam-cheat-badge" id="examCheatBadge" hidden></span>
       <button class="quiz-reset" id="examSubmitBtn">${T("examSubmitBtn")}</button>
     </div>
     <div id="examQuestionWrap"></div>
@@ -13464,6 +13558,7 @@ function renderExamPanel(){
       <button class="game-nav-btn" id="examNextBtn">${T("gameNext")}</button>
     </div>
   `;
+  examUpdateCheatBadge();
   const submitBtn = document.getElementById("examSubmitBtn");
   if(submitBtn) submitBtn.addEventListener("click", ()=>{
     playClick();
