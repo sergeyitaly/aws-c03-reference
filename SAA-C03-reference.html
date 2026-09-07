@@ -1073,6 +1073,7 @@ const UI_STRINGS = {
   examResultsCheatNone: {en:"No tab/window switches detected — full focus maintained throughout. 👍", uk:"Перемикань вкладки/вікна не виявлено — фокус утримувався протягом усього іспиту. 👍"},
   examSubmitBtn: {en:"Submit Exam", uk:"Завершити іспит"},
   examSubmitConfirm: {en:"Submit your exam now? You won't be able to change any answers after this.", uk:"Завершити іспит зараз? Після цього не можна буде змінити жодну відповідь."},
+  examResetConfirm: {en:"Reset all exam progress? This clears your current attempt — in-progress answers, timer, and any proctoring warnings — and any saved result, back to a clean slate.", uk:"Скинути весь прогрес іспиту? Це очистить поточну спробу — відповіді, таймер і будь-які попередження прокторингу — та будь-який збережений результат, повністю з чистого аркуша."},
   examQuestionOf: {en:"Question {n} of {total}", uk:"Питання {n} з {total}"},
   examResultsTitle: {en:"Exam complete", uk:"Іспит завершено"},
   examTimedOutNote: {en:"⏰ Time expired — your exam was submitted automatically.", uk:"⏰ Час вийшов — твій іспит завершено автоматично."},
@@ -13550,6 +13551,7 @@ function renderExamPanel(){
       <span class="exam-timer" id="examTimer">--:--:--</span>
       <span class="exam-counter" id="examCounter"></span>
       <span class="exam-cheat-badge" id="examCheatBadge" hidden></span>
+      <button class="quiz-reset" id="examResetBtn">${T("resetProgress")}</button>
       <button class="quiz-reset" id="examSubmitBtn">${T("examSubmitBtn")}</button>
     </div>
     <div id="examQuestionWrap"></div>
@@ -13559,6 +13561,11 @@ function renderExamPanel(){
     </div>
   `;
   examUpdateCheatBadge();
+  const resetBtn = document.getElementById("examResetBtn");
+  if(resetBtn) resetBtn.addEventListener("click", ()=>{
+    playClick();
+    if(window.confirm(T("examResetConfirm"))) examResetToIntro();
+  });
   const submitBtn = document.getElementById("examSubmitBtn");
   if(submitBtn) submitBtn.addEventListener("click", ()=>{
     playClick();
