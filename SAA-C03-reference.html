@@ -11429,6 +11429,7 @@ const GLYPH_LIB = {
     real-world concept (e.g. Kinesis and Kinesis Data Streams), they intentionally reuse the
     same glyph and are told apart by label text and category color instead. */
  fargate: '<path d="M12 3 L20 7.5 V16.5 L12 21 L4 16.5 V7.5 Z" fill="none" stroke="white" stroke-width="1.4"/><circle cx="12" cy="12" r="2.6" fill="white"/>',
+ ecr: '<rect x="5" y="12" width="14" height="6" rx="1.2" fill="none" stroke="white" stroke-width="1.4"/><rect x="6.5" y="8" width="11" height="6" rx="1.2" fill="none" stroke="white" stroke-width="1.3" opacity=".75"/><rect x="8" y="4" width="8" height="6" rx="1.2" fill="none" stroke="white" stroke-width="1.2" opacity=".5"/>',
  batch: '<rect x="3.5" y="6" width="17" height="3.4" rx="1" fill="white"/><rect x="3.5" y="10.3" width="17" height="3.4" rx="1" fill="white" opacity=".7"/><rect x="3.5" y="14.6" width="17" height="3.4" rx="1" fill="white" opacity=".45"/>',
  lightsail: '<path d="M12 3 V17" stroke="white" stroke-width="1.6" stroke-linecap="round"/><path d="M12 5c4 .5 6 3 6.5 7C14 12.5 12 10 12 5Z" fill="white"/><path d="M6 20h12" stroke="white" stroke-width="1.6" stroke-linecap="round"/>',
  outposts: '<rect x="4" y="10" width="16" height="9" rx="1.2" fill="none" stroke="white" stroke-width="1.5"/><path d="M9 19v-4h6v4" stroke="white" stroke-width="1.4" fill="none"/><circle cx="17.5" cy="5.5" r="2" fill="none" stroke="white" stroke-width="1.4"/><path d="M17.5 7.5V10" stroke="white" stroke-width="1.3"/>',
@@ -11527,7 +11528,7 @@ function badgeHTML(id, size){
    are told apart by label text + category color (e.g. Kinesis / Kinesis Data Streams). */
 const SERVICE_ICON_MAP = {
   "EC2":"ec2-fund", "Lambda":"serverless", "Elastic Beanstalk":"beanstalk", "ECS":"containers",
-  "EKS":"eks", "Fargate":"fargate", "Auto Scaling":"elb-asg", "Batch":"batch",
+  "EKS":"eks", "Fargate":"fargate", "ECR":"ecr", "Auto Scaling":"elb-asg", "Batch":"batch",
   "Lightsail":"lightsail", "Outposts":"outposts", "App Runner":"apprunner",
   "S3":"s3", "S3 Glacier":"glacier", "EBS":"ebs", "EFS":"efs", "FSx":"fsx",
   "Storage Gateway":"storagegateway", "AWS Transfer Family":"transferfamily", "DataSync":"datasync", "Snowball":"snowball", "S3 Transfer Acceleration":"s3accel", "AWS Backup":"backup",
@@ -11586,6 +11587,7 @@ const RADIAL_CATEGORIES = [
     { n:"ECS", f:["AWS-native container orchestration","Fargate = serverless containers, EC2 = self-managed","Uses task definitions + services; simpler than EKS if you don't need K8s"], uc:"Use for containerized apps when you want AWS-native orchestration without adopting full Kubernetes." },
     { n:"EKS", f:["Managed Kubernetes control plane","Use when you need K8s API/ecosystem","Can run worker nodes on EC2 or Fargate"], uc:"Use when the org already standardized on Kubernetes tooling/manifests and needs portability across clouds." },
     { n:"Fargate", f:["Serverless compute for ECS/EKS","No EC2 instances to patch or size","You pay per vCPU/memory of the task/pod, not per instance"], uc:"Use with ECS/EKS when you want to run containers without ever sizing or patching the underlying instances." },
+    { n:"ECR", f:["Managed Docker/OCI container image registry","Private repositories by default; integrates with ECS/EKS/Fargate task definitions","Amazon Inspector automatically scans pushed images for known vulnerabilities (CVEs)"], uc:"Use to store and version container images for ECS/EKS/Fargate, with automatic vulnerability scanning of every image you push." },
     { n:"Auto Scaling", f:["Scales EC2 by demand (target tracking/step/scheduled/simple)","Health checks replace unhealthy instances","Works across AZs inside one region via an Auto Scaling Group"], uc:"Use to keep an EC2 fleet sized to real traffic and to auto-replace instances that fail health checks." },
     { n:"Batch", f:["Runs batch jobs on dynamically sized compute","Picks optimal instance types for job queue","Built on ECS/Fargate/Spot under the hood"], uc:"Use for large, queued batch/HPC jobs where AWS should pick and scale the right compute automatically." },
     { n:"Lightsail", f:["Simple VPS: fixed price VM+storage+network","Best for simple apps, not enterprise scale","Bundles compute+storage+data transfer into one flat monthly price"], uc:"Use for a simple website, blog, or small app where predictable low pricing beats fine-grained AWS control." },
@@ -11684,7 +11686,7 @@ const RADIAL_CATEGORIES = [
     { n:"Cognito", f:["User sign-up/sign-in for apps","User Pools (auth, user directory) + Identity Pools (exchange for temporary AWS creds)","Supports social/SAML/OIDC federation into User Pools"], uc:"Use to add sign-up/sign-in to a customer-facing app and hand out temporary AWS credentials after login." },
     { n:"GuardDuty", f:["Managed threat detection service","Analyzes VPC Flow Logs, DNS, CloudTrail","No agents to install — analyzes existing log/event sources"], uc:"Use to continuously monitor an account for malicious activity without deploying any agents." },
     { n:"Security Hub", f:["Aggregates security findings/compliance","Central dashboard across GuardDuty, Inspector, Macie, etc","Also runs automated checks against standards like CIS/PCI"], uc:"Use to get one dashboard view of findings from GuardDuty, Inspector, Macie, etc. across accounts." },
-    { n:"Inspector", f:["Continuously scans EC2 instances, container images in ECR, and Lambda functions for vulnerabilities","Finds known CVEs and unintended network exposure — no manual scan scheduling needed","Automatically rescans on relevant changes (new package installed, new CVE published) and publishes findings to EventBridge/Security Hub"], uc:"Use to continuously find CVEs and unintended network exposure across EC2/ECR/Lambda without standing up or scheduling your own vulnerability scanner." },
+    { n:"Inspector", f:["Continuously scans EC2 instances, container images in ECR, and Lambda functions for vulnerabilities","Finds known CVEs and unintended network exposure — no manual scan scheduling needed","Code Security (GA 2025) adds SAST/SCA/IaC scanning of source code, dependencies, and IaC templates via native GitHub/GitLab integration, with findings surfaced right in pull requests","Automatically rescans on relevant changes (new package installed, new CVE published) and publishes findings to EventBridge/Security Hub"], uc:"Use to continuously find CVEs and unintended network exposure across EC2/ECR/Lambda — and, with Code Security, scan source code/dependencies/IaC before it's even merged — without standing up your own scanner." },
     { n:"Shield", f:["DDoS protection: Standard (free, automatic) or Advanced (paid)","Advanced adds 24/7 DRT support + cost protection","Standard covers all customers by default at the network/transport layer","On Global Accelerator, Advanced only gives L3/4 protection directly — auto-deployed WAF rules for L7 attacks land on the downstream ALB/CloudFront instead, since GA can't have WAF attached to it"], uc:"Use Standard by default (always on, free); add Advanced when you need DRT support and DDoS cost protection guarantees." },
     { n:"WAF", f:["Web app firewall for CloudFront/ALB/API GW","Blocks SQLi, XSS via rule sets","Rule types: managed rule groups (AWS/Marketplace), custom rules, rate-based rules, geographic (geo) match conditions","Geo match allows/blocks by request country (ISO 3166-1 alpha-2 codes) and combines with IP sets or rate-based rules for finer control — at no extra charge"], uc:"Use to block common web exploits (SQLi, XSS) at CloudFront/ALB/API Gateway before they reach your app, or to allow/block traffic by country for licensing/legal restrictions." },
     { n:"Firewall Manager", f:["Centrally manages WAF, Shield Advanced, security groups, Network Firewall, and Route 53 Resolver DNS Firewall across an Organization","Requires AWS Organizations (all features) plus a delegated Firewall Manager administrator account","Auto-applies policies to new accounts/resources as they join, not just the ones that existed when the policy was created"], uc:"Use to define WAF/Shield/security-group rules once and have them auto-enforced across every account in an Organization, including future ones." },
@@ -11708,7 +11710,7 @@ const RADIAL_CATEGORIES = [
 const RADIAL_DOC_URLS = {
   "EC2":"https://aws.amazon.com/ec2/", "Lambda":"https://aws.amazon.com/lambda/",
   "Elastic Beanstalk":"https://aws.amazon.com/elasticbeanstalk/", "ECS":"https://aws.amazon.com/ecs/",
-  "EKS":"https://aws.amazon.com/eks/", "Fargate":"https://aws.amazon.com/fargate/",
+  "EKS":"https://aws.amazon.com/eks/", "Fargate":"https://aws.amazon.com/fargate/", "ECR":"https://aws.amazon.com/ecr/",
   "Auto Scaling":"https://aws.amazon.com/autoscaling/", "Batch":"https://aws.amazon.com/batch/",
   "Lightsail":"https://aws.amazon.com/lightsail/", "Outposts":"https://aws.amazon.com/outposts/",
   "App Runner":"https://aws.amazon.com/apprunner/",
@@ -11780,11 +11782,12 @@ const RADIAL_DOC_URLS = {
    claim, so the sandbox stays freeform: any two services can still be manually connected. */
 const SERVICE_CONNECTIONS = {
   "EC2": ["EBS","S3","RDS","CloudWatch","ElastiCache","MQ","FSx","EFS","DocumentDB","MemoryDB"],
-  "Lambda": ["DynamoDB","CloudWatch","ElastiCache","OpenSearch Service","SageMaker","Rekognition","Textract","Comprehend","Transcribe","Translate","Kendra","Fraud Detector","GuardDuty","EFS","Neptune","DocumentDB","Timestream","MemoryDB","VPC"],
+  "Lambda": ["DynamoDB","CloudWatch","ElastiCache","OpenSearch Service","SageMaker","Rekognition","Textract","Comprehend","Transcribe","Translate","Kendra","Fraud Detector","GuardDuty","EFS","Neptune","DocumentDB","Timestream","MemoryDB","VPC","Inspector"],
   "Elastic Beanstalk": ["EC2","ELB","Auto Scaling","RDS","S3","CloudWatch"],
-  "ECS": ["EC2","Fargate","CloudWatch","EFS","VPC"],
-  "EKS": ["EC2","Fargate","CloudWatch","GuardDuty","VPC"],
-  "Fargate": ["CloudWatch","VPC"],
+  "ECS": ["EC2","Fargate","CloudWatch","EFS","VPC","ECR"],
+  "EKS": ["EC2","Fargate","CloudWatch","GuardDuty","VPC","ECR"],
+  "Fargate": ["CloudWatch","VPC","ECR"],
+  "ECR": ["Inspector"],
   "Auto Scaling": ["EC2","ELB","CloudWatch","ECS"],
   "Batch": ["EC2","Fargate","S3","CloudWatch","ECS"],
   "Lightsail": ["Route 53","CloudFront"],
@@ -16179,6 +16182,9 @@ const SANDBOX_ARCH_PATTERNS = [
   { id:"detective-controls-only", title:{en:"Detective-Only Security Controls", uk:"Лише детективні засоби контролю безпеки"},
     services:["Config","Control Tower","CloudTrail","GuardDuty","Security Hub","Inspector","Macie","VPC Flow Logs","Trusted Advisor"],
     blurb:{en:"Every control here only detects and alerts after the fact — none of them block anything themselves: Config continuously evaluates resource configuration against rules, Control Tower's detective guardrails flag non-compliant resources via Config under the hood (right-click it and pick the Detective Guardrail variant), CloudTrail logs every API call for later investigation, GuardDuty and Security Hub surface anomalies and aggregated findings, Inspector scans for known CVEs, Macie flags exposed sensitive data in S3, VPC Flow Logs record traffic that already happened, and Trusted Advisor flags best-practice violations. Pair with the companion Preventive-Only architecture to see the other half of AWS's defense-in-depth model.", uk:"Кожен засіб контролю тут лише виявляє й попереджає постфактум — жоден із них нічого не блокує самостійно: Config безперервно оцінює конфігурацію ресурсів за правилами, детективні guardrails Control Tower позначають невідповідні ресурси через Config під капотом (клацни правою кнопкою й обери варіант Detective Guardrail), CloudTrail логує кожен виклик API для подальшого розслідування, GuardDuty та Security Hub показують аномалії та агреговані знахідки, Inspector сканує на відомі CVE, Macie позначає відкриті чутливі дані в S3, VPC Flow Logs фіксують трафік, що вже стався, а Trusted Advisor позначає порушення найкращих практик. Поєднай із супутньою архітектурою Preventive-Only, щоб побачити другу половину моделі глибокоешелонованого захисту AWS."} },
+  { id:"code-vulnerability-scanning", title:{en:"Security Tools for Code Vulnerabilities", uk:"Засоби безпеки для виявлення вразливостей у коді"},
+    services:["Inspector","ECR","Lambda","Security Hub","EventBridge"],
+    blurb:{en:"Amazon Inspector covers both ends of the pipeline: its Code Security capability (GA 2025) runs SAST/SCA/IaC scanning against source code, dependencies, and infrastructure-as-code directly in GitHub/GitLab pull requests before anything merges, while its longstanding runtime scanning automatically checks every image pushed to ECR and every Lambda function's code/dependencies for known CVEs after deployment. Findings from both sides flow into Security Hub for one aggregated view and EventBridge for automated routing/response — no separately scheduled scanner needed at either stage.", uk:"Amazon Inspector покриває обидва кінці конвеєра: його можливість Code Security (GA 2025) виконує SAST/SCA/IaC-сканування вихідного коду, залежностей та інфраструктури-як-коду прямо в pull request'ах GitHub/GitLab до злиття, тоді як його давнє сканування у рантаймі автоматично перевіряє кожен образ, завантажений в ECR, і код/залежності кожної функції Lambda на відомі CVE вже після розгортання. Знахідки з обох сторін надходять у Security Hub для єдиного агрегованого перегляду та в EventBridge для автоматизованої маршрутизації/реагування — без окремо запланованого сканера на жодному з етапів."} },
 ];
 function sandboxMatchArchPatterns(){
   const names = new Set(sandboxNodes.map(n=>n.name));
@@ -16295,6 +16301,7 @@ const SANDBOX_ARCH_REAL_URLS = {
   "s3-replication-eventbridge-fanout": "https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-targets.html",
   "preventive-controls-only": "https://docs.aws.amazon.com/controltower/latest/controlreference/control-behavior.html",
   "detective-controls-only": "https://docs.aws.amazon.com/controltower/latest/controlreference/control-behavior.html",
+  "code-vulnerability-scanning": "https://aws.amazon.com/about-aws/whats-new/2025/06/amazon-inspector-code-security-shift-security-development/",
 };
 function sandboxArchDocUrl(pattern, score){
   if(score >= 1 && SANDBOX_ARCH_REAL_URLS[pattern.id]) return SANDBOX_ARCH_REAL_URLS[pattern.id];
