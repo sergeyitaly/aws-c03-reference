@@ -464,6 +464,26 @@ mark{ background:var(--accent-3); color:#1a1a2e; padding:0 2px; border-radius:3p
 .trap-title{ font-weight:800; font-size:14px; margin:6px 0 4px; }
 .trap-explain{ font-size:12.8px; color:var(--text-dim); line-height:1.5; }
 
+/* ---------------- Practical Cases: scenario -> solution -> why cards ---------------- */
+.case-list{ display:flex; flex-direction:column; gap:14px; }
+.case-item{
+  background:var(--bg-panel); border:1px solid var(--border); border-radius:12px;
+  padding:14px 16px; box-shadow:var(--shadow);
+}
+.case-cat-badge{
+  display:inline-block; font-size:10.5px; text-transform:uppercase; letter-spacing:.4px; font-weight:800;
+  padding:3px 9px; border-radius:20px; margin-bottom:8px; color:#fff;
+}
+.case-title{ font-weight:800; font-size:14.5px; margin:0 0 10px; }
+.case-block{ margin-bottom:10px; }
+.case-block:last-child{ margin-bottom:0; }
+.case-block-label{
+  font-size:10.5px; text-transform:uppercase; letter-spacing:.4px; font-weight:800;
+  color:var(--text-dim); margin-bottom:3px;
+}
+.case-block-text{ font-size:12.8px; line-height:1.55; }
+.case-block.why .case-block-text{ color:var(--text-dim); }
+
 /* ---------------- The Most: falling catch game — same 5 bucket types as Sorting Rush ---------------- */
 .catch-bucket-tabs{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
 .catch-bucket-btn{
@@ -1040,6 +1060,18 @@ const UI_STRINGS = {
   trapsDomain2: {en:"Domain 2 — Resilient (26%)", uk:"Домен 2 — Resilient (26%)"},
   trapsDomain3: {en:"Domain 3 — High-Performing (24%)", uk:"Домен 3 — High-Performing (24%)"},
   trapsDomain4: {en:"Domain 4 — Cost-Optimized (20%)", uk:"Домен 4 — Cost-Optimized (20%)"},
+  casesTab: {en:"Practical Cases", uk:"Практичні кейси"},
+  casesTitle: {en:"🧩 Practical Cases", uk:"🧩 Практичні кейси"},
+  casesSub: {en:"Realistic scenario → AWS-recommended solution → why it works, for hands-on situations the multiple-choice quiz doesn't fully capture. Original write-ups verified against AWS docs, not transcripts of any external course or video.",
+              uk:"Реалістичний сценарій → рекомендоване AWS рішення → чому воно працює, для практичних ситуацій, які тест із варіантами відповіді не повністю передає. Оригінальні матеріали, перевірені за документацією AWS, а не переказ будь-якого зовнішнього курсу чи відео."},
+  caseScenarioLabel: {en:"Scenario", uk:"Сценарій"},
+  caseSolutionLabel: {en:"Solution", uk:"Рішення"},
+  caseWhyLabel: {en:"Why", uk:"Чому"},
+  caseCatNetworking: {en:"Networking", uk:"Мережі"},
+  caseCatDatabase: {en:"Database", uk:"Бази даних"},
+  caseCatStorage: {en:"Storage", uk:"Сховище"},
+  caseCatSecurity: {en:"Security", uk:"Безпека"},
+  caseCatGovernance: {en:"Governance", uk:"Управління"},
   archTab: {en:"Reference Architectures", uk:"Еталонні архітектури"},
   archTitle: {en:"Reference Architectures", uk:"Еталонні архітектури"},
   archSub: {en:"Practical, business-usable designs — the tags under each one link back to the exam sections it draws on.",
@@ -3272,6 +3304,117 @@ const EXAM_TRAPS = [
     {label:{en:"Over-provision memory instead",uk:"Над-виділити пам'ять натомість"}, note:{en:"more CPU/network, can even cut cost",uk:"більше CPU/мережі, може навіть знизити вартість"}, fill:"rgba(22,163,74,.13)", stroke:"#16A34A", icon:"Lambda"},
   ]},
 ];
+
+/* ---------------- Practical Cases: scenario -> solution -> why write-ups ----------------
+   Original case studies (not summaries of any external video/course), each verified against
+   real AWS docs before being written, covering practical hands-on angles that the quiz/traps
+   don't already drill as multiple-choice — a realistic situation, the AWS-recommended approach,
+   and the specific nuance that makes it non-obvious. */
+const PRACTICAL_CASES = [
+{ category:"networking",
+  title:{en:"Reaching S3 and Secrets Manager from a fully private subnet", uk:"Доступ до S3 та Secrets Manager із повністю приватної підмережі"},
+  scenario:{en:"A fleet of EC2 instances sits in a private subnet with no NAT Gateway and no route to an Internet Gateway. Security policy forbids any path to the public internet, but the instances still need to read/write S3 objects and pull secrets from Secrets Manager.",
+             uk:"Флот інстансів EC2 сидить у приватній підмережі без NAT Gateway і без маршруту до Internet Gateway. Політика безпеки забороняє будь-який шлях до публічного інтернету, але інстансам все одно потрібно читати/писати об'єкти S3 та отримувати секрети з Secrets Manager."},
+  solution:{en:"Add a Gateway VPC Endpoint for S3 (just a route table entry, no extra cost) and an Interface VPC Endpoint (AWS PrivateLink) for Secrets Manager (an ENI with a private IP in the subnet, billed hourly plus per-GB). Both keep every byte on the AWS network — no NAT Gateway and no internet route needed at all.",
+             uk:"Додай Gateway VPC Endpoint для S3 (це лише запис у таблиці маршрутів, без додаткової вартості) та Interface VPC Endpoint (AWS PrivateLink) для Secrets Manager (ENI із приватною IP у підмережі, тарифікується погодинно плюс за ГБ). Обидва тримають кожен байт у мережі AWS — NAT Gateway і маршрут до інтернету взагалі не потрібні."},
+  why:{en:"Gateway Endpoints exist only for S3 and DynamoDB and are free; every other AWS service — Secrets Manager included — needs an Interface Endpoint with its own hourly/data charge. Mixing the two up (expecting a free Gateway Endpoint for a service that only supports Interface Endpoints) is a frequent trap.",
+        uk:"Gateway Endpoints існують лише для S3 і DynamoDB та безкоштовні; будь-який інший сервіс AWS — включно з Secrets Manager — потребує Interface Endpoint із власною погодинною/за-ГБ оплатою. Плутанина між ними (очікування безкоштовного Gateway Endpoint для сервісу, що підтримує лише Interface Endpoint) — часта пастка."} },
+{ category:"networking",
+  title:{en:"Resilient hybrid connectivity on a tight deadline", uk:"Стійка гібридна конектність у стислий термін"},
+  scenario:{en:"A financial company needs a permanent, low-latency, high-bandwidth private link between its data center and AWS for a latency-sensitive trading app — but Direct Connect's procurement lead time is too long for the launch date, and they also want an encrypted backup path in case that line ever fails.",
+             uk:"Фінансова компанія потребує постійного, малозатримкового, високопропускного приватного каналу між своїм дата-центром та AWS для торгового застосунку, чутливого до затримок — але термін постачання Direct Connect надто довгий для дати запуску, а ще потрібен шифрований резервний шлях на випадок відмови цієї лінії."},
+  solution:{en:"Order the Direct Connect dedicated connection now for the long-term primary path (accept the multi-week lead time), and stand up a Site-to-Site VPN over the internet immediately as the launch-day stopgap — then keep it running permanently as an automatic BGP-advertised failover path once Direct Connect goes live.",
+             uk:"Замов dedicated-з'єднання Direct Connect зараз як довгостроковий основний шлях (прийнявши багатотижневий термін постачання), і одразу підніми Site-to-Site VPN через інтернет як тимчасове рішення на день запуску — а потім залиш його постійно працювати як автоматичний резервний шлях через BGP, коли Direct Connect запрацює."},
+  why:{en:"Direct Connect gives consistent low latency/high throughput but isn't encrypted by default and has a real multi-week provisioning lead time; Site-to-Site VPN is encrypted and can be stood up in minutes but rides the public internet with variable latency. Pairing them with BGP on both is the standard exam answer for resilient hybrid connectivity, not picking one or the other.",
+        uk:"Direct Connect дає стабільну малу затримку/високу пропускну здатність, але не шифрований за замовчуванням і має реальний багатотижневий термін постачання; Site-to-Site VPN шифрований і піднімається за хвилини, але йде через публічний інтернет зі змінною затримкою. Поєднання обох із BGP — стандартна відповідь іспиту для стійкої гібридної конектності, а не вибір одного з двох."} },
+{ category:"database",
+  title:{en:"Locking down an RDS database that already holds PII", uk:"Захист бази даних RDS, яка вже містить PII"},
+  scenario:{en:"An RDS MySQL database already stores customer PII in production. Security now requires encryption at rest, encrypted connections in transit, no long-lived database passwords sitting in application config, and confirmation the DB is never reachable from the public internet.",
+             uk:"База даних RDS MySQL уже зберігає PII клієнтів у продакшені. Служба безпеки тепер вимагає шифрування в стані спокою, шифровані з'єднання під час передачі, відсутність довгоживучих паролів бази даних у конфігурації застосунку та підтвердження, що БД ніколи не доступна з публічного інтернету."},
+  solution:{en:"Since encryption at rest can't be toggled on an existing unencrypted instance, take a snapshot, copy it with encryption enabled (specifying a KMS key), and restore a new encrypted instance from that copy — then cut the application over. Enforce SSL/TLS for connections, switch the application to IAM database authentication for short-lived auth tokens instead of a static password, keep the instance in a private subnet, and leave Publicly Accessible set to No with a security group that only allows the app tier's security group as a source.",
+             uk:"Оскільки шифрування в стані спокою не можна ввімкнути перемикачем на наявному незашифрованому інстансі, зроби знімок, скопіюй його з увімкненим шифруванням (вказавши ключ KMS), і віднови новий зашифрований інстанс із цієї копії — потім переведи застосунок на нього. Впровадь SSL/TLS для з'єднань, перемкни застосунок на IAM database authentication для короткоживучих токенів автентифікації замість статичного пароля, тримай інстанс у приватній підмережі та залиш Publicly Accessible вимкненим із security group, що дозволяє джерелом лише security group рівня застосунку."},
+  why:{en:"RDS encryption at rest can only be set at creation time — there's no in-place toggle for a running unencrypted instance, only the snapshot-copy-restore path. Assuming it's a simple setting to flip on an existing database is one of the most common RDS traps on the exam.",
+        uk:"Шифрування RDS у стані спокою можна встановити лише під час створення — немає перемикача на льоту для працюючого незашифрованого інстансу, лише шлях знімок-копія-відновлення. Припущення, що це просте налаштування, яке можна перемкнути на наявній базі даних — одна з найпоширеніших пасток RDS на іспиті."} },
+{ category:"security",
+  title:{en:"One free-tier certificate per environment, zero manual renewals", uk:"По одному безкоштовному сертифікату на середовище, без ручних поновлень"},
+  scenario:{en:"A company needs a TLS certificate for a public website served through CloudFront, a second certificate for an internal ALB reachable only inside the VPC, and wants certificates to auto-renew forever without anyone tracking expiration dates on a calendar.",
+             uk:"Компанії потрібен TLS-сертифікат для публічного сайту через CloudFront, другий сертифікат для внутрішнього ALB, доступного лише всередині VPC, і потрібно, щоб сертифікати поновлювалися автоматично назавжди без відстеження термінів дії в календарі."},
+  solution:{en:"Request both certificates through ACM at no charge. For the CloudFront certificate specifically, request or import it in us-east-1 regardless of which Region the origin actually runs in. Use Route 53 DNS validation (not email validation) for both, so ACM can silently re-validate and auto-renew each certificate indefinitely with no manual step.",
+             uk:"Запроси обидва сертифікати через ACM безкоштовно. Для сертифіката CloudFront запроси або імпортуй його саме в us-east-1, незалежно від того, у якому регіоні реально працює origin. Використай DNS-валідацію через Route 53 (не email-валідацію) для обох, щоб ACM міг мовчки повторно валідувати й автоматично поновлювати кожен сертифікат безстроково без жодного ручного кроку."},
+  why:{en:"CloudFront will flatly reject a certificate that isn't in us-east-1, no matter where the origin lives — a pure CloudFront API requirement, not a latency optimization. And ACM only auto-renews smoothly when DNS validation stays continuously verifiable; a certificate validated by email (or DNS validation that later breaks) can silently fail to renew.",
+        uk:"CloudFront просто відхилить сертифікат, якщо він не в us-east-1, незалежно від того, де знаходиться origin — це чиста вимога API CloudFront, а не оптимізація затримки. А ACM плавно автопоновлює лише доки DNS-валідація залишається постійно перевірюваною; сертифікат, валідований через email (або DNS-валідація, що згодом ламається), може мовчки не поновитися."} },
+{ category:"security",
+  title:{en:"Three different callers, three different API Gateway auth mechanisms", uk:"Три різні виклики, три різні механізми авторизації API Gateway"},
+  scenario:{en:"A public REST API on API Gateway needs: endpoints only the company's own signed-in mobile app users can call, separate internal endpoints only other AWS services should be able to call, and protection for every endpoint against a client that suddenly starts hammering it with requests.",
+             uk:"Публічний REST API на API Gateway потребує: точок доступу, які можуть викликати лише авторизовані користувачі власного мобільного застосунку компанії, окремих внутрішніх точок доступу, які мають викликати лише інші сервіси AWS, та захисту кожної точки доступу від клієнта, який раптово починає закидати її запитами."},
+  solution:{en:"Put a Cognito User Pool authorizer on the customer-facing endpoints, which validates the signed-in user's JWT on every call. Put IAM authorization (SigV4-signed requests) on the internal service-to-service endpoints. Layer usage plans with throttling and burst limits (with API keys per client if per-customer quotas are also needed) across all of it, independent of which authorizer sits in front.",
+             uk:"Постав Cognito User Pool authorizer на точки доступу для клієнтів, який перевіряє JWT авторизованого користувача на кожен виклик. Постав IAM-авторизацію (запити, підписані SigV4) на внутрішні точки доступу між сервісами. Накладай usage plans із обмеженнями швидкості й пікових значень (з API keys на клієнта, якщо потрібні квоти на клієнта) поверх усього цього, незалежно від того, який authorizer стоїть попереду."},
+  why:{en:"API Gateway supports several genuinely distinct authorization mechanisms (Cognito User Pools, IAM/SigV4, Lambda custom authorizers) and picking the one that matches who's actually calling is a common scenario question. Throttling/usage plans are a completely separate concern from authorization — they're what actually caps a request flood, regardless of how the caller authenticated.",
+        uk:"API Gateway підтримує кілька справді різних механізмів авторизації (Cognito User Pools, IAM/SigV4, кастомні Lambda authorizer), і вибір того, що відповідає реальному викликачу — часте сценарне питання. Throttling/usage plans — це абсолютно окреме питання від авторизації: саме вони обмежують потік запитів, незалежно від того, як викликач автентифікувався."} },
+{ category:"governance",
+  title:{en:"Making tags actually show up in the AWS bill", uk:"Як зробити, щоб теги реально з'явилися в рахунку AWS"},
+  scenario:{en:"A company's AWS bill spans dozens of teams and projects, and finance can't tell which team is spending what without emailing everyone every month. They also want it to be impossible to launch an EC2 instance without a CostCenter tag going forward.",
+             uk:"Рахунок AWS компанії охоплює десятки команд і проєктів, і фінансовий відділ не може зрозуміти, хто скільки витрачає, без щомісячного розсилання листів усім. Вони також хочуть, щоб надалі було неможливо запустити інстанс EC2 без тегу CostCenter."},
+  solution:{en:"Adopt a consistent tag set (CostCenter, Environment, Owner, Project) across billable resources, then activate exactly those tags as cost allocation tags in the Billing console so they appear as filterable columns in Cost Explorer and Cost and Usage Reports. Enforce the CostCenter tag going forward with a Service Control Policy that denies resource creation without it, or an AWS Config required-tags rule if detect-and-flag is preferred over hard denial.",
+             uk:"Впровадь узгоджений набір тегів (CostCenter, Environment, Owner, Project) на всіх тарифікованих ресурсах, потім активуй саме ці теги як cost allocation tags у консолі Billing, щоб вони з'явилися як фільтровані колонки в Cost Explorer і Cost and Usage Reports. Впроваджуй тег CostCenter надалі через Service Control Policy, що забороняє створення ресурсу без нього, або через правило AWS Config required-tags, якщо потрібне лише виявлення й позначення, а не жорстка заборона."},
+  why:{en:"A tag existing on a resource does nothing for cost reporting until it's specifically activated as a cost allocation tag in Billing — a frequent 'why isn't this tag showing up in Cost Explorer' trap. Enforcing a tag is a governance choice mirroring the preventive-vs-detective split: an SCP hard-blocks it, a Config rule only flags it after the fact.",
+        uk:"Тег, що існує на ресурсі, нічого не дає для звітності про витрати, доки його спеціально не активовано як cost allocation tag у Billing — часта пастка 'чому цей тег не з'являється в Cost Explorer'. Впровадження тегу — це рішення governance, що віддзеркалює розподіл preventive-vs-detective: SCP жорстко блокує, правило Config лише позначає постфактум."} },
+{ category:"storage",
+  title:{en:"One file system, many instances, automatic cost tiering", uk:"Одна файлова система, багато інстансів, автоматичне ярусне зберігання"},
+  scenario:{en:"A web application running on EC2 instances spread across three Availability Zones needs a shared file system every instance can read and write to concurrently, growing automatically as data is added, with cold rarely-touched files moved to cheaper storage without anyone doing it by hand.",
+             uk:"Веб-застосунок, що працює на інстансах EC2 у трьох зонах доступності, потребує спільної файлової системи, яку кожен інстанс може конкурентно читати й записувати, що автоматично зростає з додаванням даних, з автоматичним перенесенням холодних рідко використовуваних файлів у дешевше сховище без ручної роботи."},
+  solution:{en:"Use EFS with a mount target in each AZ's subnet so every instance mounts the exact same file system over NFS with low latency regardless of which AZ it's in. Turn on EFS Lifecycle Management so files that haven't been accessed for a configurable period automatically move into EFS Infrequent Access, which costs less per GB while staying transparently readable/writable the moment they're touched again.",
+             uk:"Використай EFS із mount target у підмережі кожної AZ, щоб кожен інстанс монтував ту саму файлову систему через NFS із низькою затримкою незалежно від того, в якій він AZ. Увімкни EFS Lifecycle Management, щоб файли, до яких не зверталися протягом налаштовуваного періоду, автоматично переміщувалися в EFS Infrequent Access, що коштує менше за ГБ, залишаючись прозоро доступними для читання/запису в момент повторного звернення."},
+  why:{en:"EBS volumes attach to one instance (or one AZ, with narrow io2 Multi-Attach exceptions) — EFS is the answer whenever a scenario says multiple instances across AZs need to concurrently read/write the same files. Lifecycle Management to IA is the automatic-cost-tiering half of that same question type, the EFS equivalent of an S3 Lifecycle rule.",
+        uk:"Томи EBS приєднуються до одного інстансу (або однієї AZ, з вузькими винятками io2 Multi-Attach) — EFS є відповіддю щоразу, коли сценарій каже, що кілька інстансів у різних AZ мають конкурентно читати/записувати ті самі файли. Lifecycle Management у IA — це половина того самого типу питання про автоматичне ярусне зберігання за вартістю, EFS-еквівалент правила S3 Lifecycle."} },
+{ category:"storage",
+  title:{en:"Backup vs. replication aren't the same recovery tool", uk:"Резервне копіювання й реплікація — не той самий інструмент відновлення"},
+  scenario:{en:"A company runs critical workloads across S3, RDS, and EBS and needs automated backups it doesn't have to script by hand, a way to meet a strict RPO by continuously copying new S3 objects to a second Region, and one place to confirm every resource type is actually being backed up on schedule.",
+             uk:"Компанія використовує критичні навантаження на S3, RDS та EBS і потребує автоматизованих резервних копій без ручного скриптування, способу дотримуватися жорсткого RPO шляхом безперервного копіювання нових об'єктів S3 в інший регіон, та одного місця для підтвердження, що кожен тип ресурсу дійсно резервується за розкладом."},
+  solution:{en:"Use AWS Backup as the centralized policy layer (backup plans and vaults) covering scheduled RDS and EBS snapshots, with cross-Region copy for DR — and check its central compliance dashboard for one-place visibility across every resource type instead of checking each service's own console. Use S3 Cross-Region Replication separately for the continuous, near-real-time object-level copy that a snapshot schedule can never match for RPO.",
+             uk:"Використовуй AWS Backup як централізований шар політик (backup plans і vaults), що охоплює заплановані знімки RDS та EBS, із копіюванням між регіонами для DR — і перевіряй його центральну панель відповідності для видимості в одному місці по кожному типу ресурсу замість перевірки консолі кожного сервісу окремо. Окремо використовуй S3 Cross-Region Replication для безперервного, майже реального часу копіювання на рівні об'єктів, якого розклад знімків ніколи не досягне за RPO."},
+  why:{en:"AWS Backup is a policy/orchestration layer over point-in-time snapshots, not a substitute for S3 replication's continuous object-level sync. Confusing 'backup' (point-in-time, recoverable) with 'replication' (ongoing, near-real-time copy) — and picking the wrong one for a strict RPO requirement — is exactly the distinction this exam likes to test.",
+        uk:"AWS Backup — це шар політик/оркестрації над знімками на певний момент часу, а не заміна безперервної синхронізації S3 replication на рівні об'єктів. Плутанина 'резервної копії' (на момент часу, відновлювана) з 'реплікацією' (постійне, майже реального часу копіювання) — і вибір неправильного варіанту для жорсткої вимоги RPO — це саме те розрізнення, яке любить перевіряти цей іспит."} },
+{ category:"security",
+  title:{en:"Bringing your own key material into KMS", uk:"Імпорт власного ключового матеріалу в KMS"},
+  scenario:{en:"Compliance requires that the literal cryptographic key material for one specific KMS key be generated by the company's own on-premises HSM, to prove its entropy source — and they want the ability to render that key immediately and permanently unusable on demand, without waiting through KMS's standard deletion process.",
+             uk:"Комплаєнс вимагає, щоб буквальний криптографічний ключовий матеріал для одного конкретного ключа KMS генерувався власним локальним HSM компанії, щоб довести джерело ентропії — і потрібна можливість негайно й безповоротно зробити цей ключ непридатним за вимогою, без очікування через стандартний процес видалення KMS."},
+  solution:{en:"Create a KMS key with no key material, then import externally-generated key material into it (BYOK) using the wrapping key and import token AWS KMS provides for that purpose. Optionally set an expiration time on the imported material so it can be deleted the instant it expires, or delete it manually on demand — either way with no 7-30 day waiting window — and reimport fresh material later if the key needs to be usable again.",
+             uk:"Створи ключ KMS без ключового матеріалу, потім імпортуй у нього зовнішньо згенерований ключовий матеріал (BYOK), використовуючи wrapping key та import token, які AWS KMS надає для цього. За бажанням встанови термін дії імпортованого матеріалу, щоб його можна було видалити миттєво після закінчення терміну, або видали вручну за вимогою — в обох випадках без вікна очікування 7-30 днів — і повторно імпортуй новий матеріал пізніше, якщо ключ знову потрібно зробити придатним."},
+  why:{en:"Imported key material is the only way to control the literal cryptographic material's origin, and it's also the only path to an instant, non-waiting-period key deletion — a deliberate, tested contrast against the mandatory 7-30 day wait for a normal AWS-generated CMK's scheduled deletion.",
+        uk:"Імпортований ключовий матеріал — єдиний спосіб контролювати походження буквального криптографічного матеріалу, і водночас єдиний шлях до миттєвого видалення ключа без періоду очікування — свідомий, перевірюваний контраст із обов'язковим очікуванням 7-30 днів для запланованого видалення звичайного CMK, згенерованого AWS."} },
+{ category:"governance",
+  title:{en:"One compliance query across 40 accounts, not 40 logins", uk:"Один запит відповідності на 40 акаунтів замість 40 входів"},
+  scenario:{en:"A company has 40 AWS accounts under one Organization. Security wants a single dashboard showing configuration compliance across every account and Region without logging into each account's own Config console — and wants to run one query like 'list every unencrypted S3 bucket company-wide' instead of checking account by account.",
+             uk:"Компанія має 40 акаунтів AWS в одній Organization. Безпека хоче єдину панель, що показує відповідність конфігурації в кожному акаунті й регіоні без входу в консоль Config кожного окремого акаунту — і хоче виконати один запит на кшталт 'перелічити кожен незашифрований бакет S3 по всій компанії' замість перевірки акаунт за акаунтом."},
+  solution:{en:"Turn on AWS Config in every member account (an organization-wide aggregation source needs no per-account authorization since it's driven by Organizations itself), then create a Config aggregator in one designated account scoped to the whole Organization across all Regions. Use Config's advanced queries — a SQL-like query language over the aggregated configuration data — to run that single cross-account 'list every unencrypted bucket' query centrally, right from the aggregator account.",
+             uk:"Увімкни AWS Config у кожному акаунті-учаснику (джерело агрегації на рівні всієї Organization не потребує авторизації для кожного акаунту окремо, оскільки керується самою Organizations), потім створи Config aggregator в одному призначеному акаунті, налаштованому на всю Organization в усіх регіонах. Використовуй advanced queries Config — SQL-подібну мову запитів над агрегованими даними конфігурації — щоб виконати той єдиний крос-акаунтний запит 'перелічити кожен незашифрований бакет' централізовано, прямо з акаунту-агрегатора."},
+  why:{en:"An aggregator is strictly read-only: it can show and query resource configuration/compliance across every source account and Region, but it can never deploy Config rules or push remediation into those source accounts. Aggregation is the actual mechanism behind 'one central compliance view across an Organization' — a far more scalable answer than logging into 40 accounts one at a time.",
+        uk:"Aggregator — суто read-only: він може показувати й запитувати конфігурацію/відповідність ресурсів у кожному акаунті-джерелі та регіоні, але ніколи не може розгортати правила Config чи впроваджувати виправлення в ці акаунти-джерела. Агрегація — це реальний механізм за 'єдиним центральним поглядом на відповідність по всій Organization' — набагато масштабованіша відповідь, ніж вхід у 40 акаунтів по одному."} },
+{ category:"security",
+  title:{en:"Keeping one field encrypted all the way to a single microservice", uk:"Тримання одного поля зашифрованим аж до одного мікросервісу"},
+  scenario:{en:"An e-commerce checkout form submits a credit card number and shipping address through CloudFront to an origin, which then forwards the request to several backend microservices for order processing, tax calculation, and shipping — but only the payment microservice should ever see the raw card number, never the others, even though all of them talk over HTTPS.",
+             uk:"Форма оформлення замовлення в інтернет-магазині надсилає номер кредитної картки й адресу доставки через CloudFront на origin, який потім передає запит кільком бекенд-мікросервісам для обробки замовлення, розрахунку податку та доставки — але лише платіжний мікросервіс повинен бачити реальний номер картки, ніколи інші, навіть попри те, що всі вони спілкуються через HTTPS."},
+  solution:{en:"Generate an RSA key pair, upload the public key to CloudFront, create a field-level encryption profile naming the specific POST field (e.g. CreditCardNumber) to encrypt, and attach the resulting configuration to the distribution's cache behavior. CloudFront encrypts just that one field at the edge using the public key; it stays encrypted through every internal hop until the payment microservice — the only place holding the matching private key — decrypts it.",
+             uk:"Згенеруй пару ключів RSA, завантаж публічний ключ у CloudFront, створи профіль field-level encryption, що називає конкретне поле POST (наприклад, CreditCardNumber) для шифрування, і прикріпи отриману конфігурацію до cache behavior дистрибутиву. CloudFront шифрує лише це одне поле на edge за допомогою публічного ключа; воно залишається зашифрованим через кожен внутрішній хоп, доки платіжний мікросервіс — єдине місце з відповідним приватним ключем — не розшифрує його."},
+  why:{en:"Plain HTTPS only protects data in transit for each individual hop — every internal service the request passes through afterward would still see the raw value on its own HTTPS connection. Field-level encryption keeps that one specific field encrypted end-to-end through the whole internal stack, readable only by whichever component holds the private key, while every other field in the same request stays untouched.",
+        uk:"Звичайний HTTPS захищає дані під час передачі лише для кожного окремого хопу — кожен внутрішній сервіс, через який далі проходить запит, все одно бачив би реальне значення на своєму власному HTTPS-з'єднанні. Field-level encryption тримає це одне конкретне поле зашифрованим наскрізно через увесь внутрішній стек, читабельним лише тим компонентом, що має приватний ключ, тоді як усі інші поля того самого запиту залишаються незмінними."} },
+{ category:"security",
+  title:{en:"An open bucket policy nobody noticed for months", uk:"Відкрита політика бакета, яку ніхто не помічав місяцями"},
+  scenario:{en:"A security review turns up an S3 bucket policy that, unnoticed for months, grants read access to an AWS account outside the company's Organization. The same review separately needs to find IAM roles and long-lived access keys nobody has actually used in a long time, so they can be safely removed.",
+             uk:"Перевірка безпеки виявляє політику бакета S3, яка, непомічена місяцями, надає доступ на читання акаунту AWS поза межами Organization компанії. Та сама перевірка окремо потребує знайти IAM ролі та довгоживучі ключі доступу, якими ніхто фактично давно не користувався, щоб їх можна було безпечно видалити."},
+  solution:{en:"Turn on IAM Access Analyzer's external access analysis, which continuously scans resource-based policies (S3 buckets, IAM roles, KMS keys, Lambda, SQS, Secrets Manager, and more) and generates a finding the moment one grants access to a principal outside a defined zone of trust — the account or the whole Organization — long before a manual policy review would catch it. Separately, turn on Access Analyzer's unused access analysis, which reviews historical activity to flag roles, permissions, and credentials that have gone unused so they can be right-sized or removed.",
+             uk:"Увімкни аналіз зовнішнього доступу IAM Access Analyzer, який безперервно сканує resource-based політики (бакети S3, ролі IAM, ключі KMS, Lambda, SQS, Secrets Manager та інше) і створює знахідку в момент, коли якась із них надає доступ принципалу поза визначеною зоною довіри — акаунтом чи всією Organization — задовго до того, як це виявила б ручна перевірка політик. Окремо увімкни аналіз невикористаного доступу Access Analyzer, який переглядає історичну активність, щоб позначити ролі, дозволи та облікові дані, що залишилися невикористаними, аби їх можна було звузити чи видалити."},
+  why:{en:"These are two distinct Access Analyzer capabilities that get conflated: external access analysis is about who CAN reach a resource right now — a policy-scanning, near-real-time detective control — while unused access analysis is about what's actually been used, going back through activity history — a least-privilege hygiene tool. A scenario about catching an open bucket policy sooner points at external access analysis, not unused access.",
+        uk:"Це дві різні можливості Access Analyzer, які часто плутають: аналіз зовнішнього доступу — про те, хто МОЖЕ дістатися ресурсу прямо зараз — детективний контроль майже в реальному часі на основі сканування політик — тоді як аналіз невикористаного доступу — про те, що реально використовувалося, з поверненням через історію активності — інструмент гігієни найменших привілеїв. Сценарій про якнайшвидше виявлення відкритої політики бакета вказує на аналіз зовнішнього доступу, а не на невикористаний доступ."} },
+];
+const CASE_CATEGORY_META = {
+  networking: {color:"#8C4FFF", labelKey:"caseCatNetworking"},
+  database:   {color:"#3B48CC", labelKey:"caseCatDatabase"},
+  storage:    {color:"#7AA116", labelKey:"caseCatStorage"},
+  security:   {color:"#DD344C", labelKey:"caseCatSecurity"},
+  governance: {color:"#5A6B87", labelKey:"caseCatGovernance"},
+};
 
 /* ---------------- Practice questions ----------------
    Original scenario-based questions written to test the same concepts and
@@ -11378,6 +11521,7 @@ const ICON_META = {
  "limits":         {color:"#0891B2", g:'<path d="M4 17 L4 7 L20 7 L20 17 Z" fill="none" stroke="white" stroke-width="1.6"/><path d="M7 7v3M10 7v5M13 7v3M16 7v5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>'},
  "tree":           {color:"#7B61FF", g:'<circle cx="12" cy="5" r="2" fill="white"/><path d="M12 7v3M12 10H6M12 10h6M6 10v3M18 10v3" fill="none" stroke="white" stroke-width="1.4" stroke-linecap="round"/><circle cx="6" cy="15" r="2" fill="white"/><circle cx="18" cy="15" r="2" fill="white"/>'},
  "traps":          {color:"#DC2626", g:'<path d="M12 3.5 L21 19.5 H3 Z" fill="none" stroke="white" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 9.5v5" stroke="white" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="16.7" r="1" fill="white"/>'},
+ "cases":          {color:"#CA8A04", g:'<path d="M9 18h6M10 21h4" stroke="white" stroke-width="1.6" stroke-linecap="round"/><path d="M12 3.5a6 6 0 00-3.5 10.9c.6.45 1 1.1 1 1.9v.2h5v-.2c0-.8.4-1.45 1-1.9A6 6 0 0012 3.5Z" fill="none" stroke="white" stroke-width="1.6" stroke-linejoin="round"/>'},
 };
 /* Per-card service glyphs — original pictograms (not AWS's trademarked icon
    artwork), matched to whichever specific named service a card is actually
@@ -12288,6 +12432,11 @@ function buildApp(){
   trapsBtn.innerHTML = `${badgeHTML("traps","sm")}<span>${T("trapsTab")}</span>`;
   trapsBtn.addEventListener("click", ()=>{ playClick(); selectTab("traps"); });
   tabList.appendChild(trapsBtn);
+  const casesBtn = document.createElement("button");
+  casesBtn.className="tab-btn"; casesBtn.dataset.target="cases";
+  casesBtn.innerHTML = `${badgeHTML("cases","sm")}<span>${T("casesTab")}</span>`;
+  casesBtn.addEventListener("click", ()=>{ playClick(); selectTab("cases"); });
+  tabList.appendChild(casesBtn);
   const limitsBtn = document.createElement("button");
   limitsBtn.className="tab-btn"; limitsBtn.dataset.target="limits";
   limitsBtn.innerHTML = `${badgeHTML("limits","sm")}<span>${T("limitsTab")}</span>`;
@@ -12891,6 +13040,43 @@ function buildApp(){
     });
   });
   renderTrapDomain(1);
+
+  const casesPanel = document.createElement("section");
+  casesPanel.className = "panel"; casesPanel.id = "panel-cases";
+  casesPanel.innerHTML = `
+    <h2>${T("casesTitle")}</h2>
+    <p class="subtitle">${T("casesSub")}</p>
+    <div class="case-list" id="case-list"></div>`;
+  mainEl.appendChild(casesPanel);
+  const caseListEl = document.getElementById("case-list");
+  PRACTICAL_CASES.forEach(c=>{
+    const item = document.createElement("div");
+    item.className = "case-item";
+    const catMeta = CASE_CATEGORY_META[c.category] || {color:"var(--accent)", labelKey:""};
+    const badge = document.createElement("span");
+    badge.className = "case-cat-badge";
+    badge.style.background = catMeta.color;
+    badge.textContent = T(catMeta.labelKey);
+    item.appendChild(badge);
+    const title = document.createElement("div");
+    title.className = "case-title";
+    title.textContent = c.title[currentLang];
+    item.appendChild(title);
+    [["scenario","caseScenarioLabel"],["solution","caseSolutionLabel"],["why","caseWhyLabel"]].forEach(([key,labelKey])=>{
+      const block = document.createElement("div");
+      block.className = "case-block " + key;
+      const label = document.createElement("div");
+      label.className = "case-block-label";
+      label.textContent = T(labelKey);
+      block.appendChild(label);
+      const text = document.createElement("div");
+      text.className = "case-block-text";
+      text.textContent = c[key][currentLang];
+      block.appendChild(text);
+      item.appendChild(block);
+    });
+    caseListEl.appendChild(item);
+  });
 
   const limitsPanel = document.createElement("section");
   limitsPanel.className = "panel"; limitsPanel.id = "panel-limits";
