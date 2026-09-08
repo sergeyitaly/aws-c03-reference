@@ -11419,6 +11419,9 @@ const GLYPH_LIB = {
  waf: '<rect x="4" y="5" width="7" height="4" fill="none" stroke="white" stroke-width="1.3"/><rect x="11" y="5" width="9" height="4" fill="none" stroke="white" stroke-width="1.3"/><rect x="4" y="9" width="4" height="4" fill="none" stroke="white" stroke-width="1.3"/><rect x="8" y="9" width="8" height="4" fill="none" stroke="white" stroke-width="1.3"/><rect x="16" y="9" width="4" height="4" fill="none" stroke="white" stroke-width="1.3"/><rect x="4" y="13" width="7" height="4" fill="none" stroke="white" stroke-width="1.3"/><rect x="11" y="13" width="9" height="4" fill="none" stroke="white" stroke-width="1.3"/>',
  firewallmanager: '<path d="M12 3 L18 5.5 V10 C18 13.8 15.5 16.8 12 18 C8.5 16.8 6 13.8 6 10 V5.5 Z" fill="none" stroke="white" stroke-width="1.4"/><path d="M12 18 L7 21M12 18 L12 21M12 18 L17 21" stroke="white" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="7" cy="21" r="1" fill="white"/><circle cx="12" cy="21" r="1" fill="white"/><circle cx="17" cy="21" r="1" fill="white"/>',
  s3eventnotif: '<path d="M3 9 H14 L12.7 19.5 C12.6 20.2 12 20.7 11.3 20.7 H5.7 C5 20.7 4.4 20.2 4.3 19.5 Z" fill="none" stroke="white" stroke-width="1.35"/><path d="M3 9 C3 7.9 5.1 7 8.5 7 C11.9 7 14 7.9 14 9 C14 10.1 11.9 11 8.5 11 C5.1 11 3 10.1 3 9 Z" fill="none" stroke="white" stroke-width="1.25"/><path d="M16.5 5c1.1.4 1.9 1.5 1.9 2.7M16.5 3.2c2 .5 3.4 2.4 3.4 4.5" stroke="white" stroke-width="1.15" fill="none" stroke-linecap="round"/><circle cx="17.8" cy="8.7" r="1.1" fill="white"/>',
+ networkfirewall: '<path d="M3 7h7M3 12h7M3 17h7" stroke="white" stroke-width="1.6" stroke-linecap="round"/><rect x="10.5" y="4" width="3" height="16" rx="1" fill="white"/><path d="M16 7h5M16 17h5" stroke="white" stroke-width="1.6" stroke-linecap="round"/><path d="M15.5 12h3" stroke="white" stroke-width="1.6" stroke-linecap="round" opacity=".35"/>',
+ inspector: '<circle cx="10" cy="10" r="6.5" fill="none" stroke="white" stroke-width="1.5"/><path d="M14.6 14.6 L20 20" stroke="white" stroke-width="1.7" stroke-linecap="round"/><ellipse cx="10" cy="10.5" rx="2.1" ry="2.9" fill="none" stroke="white" stroke-width="1.15"/><path d="M8.2 7.8l-1.4-1.4M11.8 7.8l1.4-1.4M8.2 13.2l-1.4 1.4M11.8 13.2l1.4 1.4M6.6 10.5H5.2M14.8 10.5h-1.4" stroke="white" stroke-width="1" stroke-linecap="round"/>',
+ vpcflowlogs: '<circle cx="5" cy="7" r="1.6" fill="white"/><circle cx="5" cy="17" r="1.6" fill="white"/><path d="M6.5 7h4M6.5 17h4M5 8.5v7" stroke="white" stroke-width="1.2" fill="none"/><rect x="12" y="4.5" width="9" height="15" rx="1.2" fill="none" stroke="white" stroke-width="1.4"/><path d="M14.5 9h4M14.5 12.5h4M14.5 16h2.5" stroke="white" stroke-width="1.2" stroke-linecap="round"/>',
  guardduty: '<path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6-10-6-10-6z" fill="none" stroke="white" stroke-width="1.4"/><circle cx="12" cy="12" r="2.6" fill="white"/>',
  /* Extended for the Services Tree / Architecture Sandbox, which show every one of the 101
     services individually rather than matching card titles — same original-pictogram rule
@@ -11533,7 +11536,7 @@ const SERVICE_ICON_MAP = {
   "ElastiCache":"elasticache", "Redshift":"redshift", "Neptune":"neptune", "DocumentDB":"documentdb",
   "Database Migration Service":"dms", "Timestream":"timestream", "MemoryDB":"memorydb",
   "On-Premises":"onprem", "Region":"region", "Availability Zone":"az",
-  "VPC":"vpc", "Subnets":"subnet", "Security Groups":"securitygroup", "Network ACL":"nacl", "NAT Gateway":"natgateway", "Internet Gateway":"igw",
+  "VPC":"vpc", "Subnets":"subnet", "Security Groups":"securitygroup", "Network ACL":"nacl", "VPC Flow Logs":"vpcflowlogs", "NAT Gateway":"natgateway", "Internet Gateway":"igw",
   "Route 53":"route53", "CloudFront":"cdn", "ELB":"elb-asg", "API Gateway":"apigateway",
   "Direct Connect":"directconnect", "Transit Gateway":"transitgateway", "VPN (Site-to-Site)":"vpnst",
   "VPC Endpoints":"vpcendpoint", "Global Accelerator":"globalaccelerator",
@@ -11546,7 +11549,7 @@ const SERVICE_ICON_MAP = {
   "Forecast":"forecast", "Kendra":"opensearch", "Fraud Detector":"frauddetector",
   "IAM":"iam-advanced", "Organizations":"organizations", "KMS":"kms", "Secrets Manager":"secretsmanager",
   "Cognito":"iam_role", "GuardDuty":"guardduty", "Security Hub":"securityhub", "Shield":"shield",
-  "WAF":"waf", "Firewall Manager":"firewallmanager", "Macie":"macie", "ACM":"acm", "STS":"sts",
+  "WAF":"waf", "Firewall Manager":"firewallmanager", "Network Firewall":"networkfirewall", "Inspector":"inspector", "Macie":"macie", "ACM":"acm", "STS":"sts",
   "CloudWatch":"monitoring", "CloudTrail":"cloudtrail", "Config":"config", "CloudFormation":"cloudformation",
   "Trusted Advisor":"trustedadvisor", "Systems Manager":"ssm", "Service Catalog":"servicecatalog",
   "Control Tower":"controltower", "Compute Optimizer":"computeoptimizer",
@@ -11627,6 +11630,8 @@ const RADIAL_CATEGORIES = [
     { n:"Subnets", f:["AZ-scoped — a subnet lives in exactly one AZ, a VPC is regional","Public subnet: has a route to an Internet Gateway; private subnet: doesn't","CIDR: /16 to /28; AWS reserves 5 IPs per subnet (network, VPC router, DNS, future use, broadcast)"], uc:"Use to segment a VPC into AZ-scoped ranges — e.g. public subnets for internet-facing resources, private subnets for backend tiers." },
     { n:"Security Groups", f:["Stateful — return traffic is automatically allowed","Instance/ENI level, ALLOW rules only — no explicit deny","Can reference another security group as the source for tiered access"], uc:"Use to control inbound/outbound traffic per instance/ENI when you only need to allow specific traffic, not explicitly block a source." },
     { n:"Network ACL", f:["Stateless — both directions must be explicitly allowed","Subnet-level, supports ALLOW and explicit DENY","Rules evaluated in number order — first match wins"], uc:"Use when you need to explicitly block a specific IP/CIDR at the subnet level — the only VPC construct with an explicit Deny." },
+    { n:"Network Firewall", f:["Stateful, managed network firewall for a VPC — uses Suricata-compatible IPS rules","Filters by domain lists, 5-tuple rules, and deep packet inspection, independent of the port used","Deployed via firewall endpoints in dedicated subnets; VPC route tables steer traffic through it"], uc:"Use for VPC-perimeter traffic inspection/blocking (domain filtering, IPS) that Security Groups/NACLs can't express, since those only match IP/port/protocol." },
+    { n:"VPC Flow Logs", f:["Captures IP traffic metadata for network interfaces in a VPC (source/dest IP, port, protocol, accept/reject)","Publishes to CloudWatch Logs, S3, or Kinesis Data Firehose","Collected outside the traffic path — enabling/disabling it never affects network throughput or latency"], uc:"Use to diagnose overly restrictive security group/NACL rules or investigate traffic patterns after the fact — it only records, it never blocks anything itself." },
     { n:"NAT Gateway", f:["Managed, AZ-scoped — deploy one per AZ for high availability","Lets private-subnet resources initiate outbound internet traffic only","Billed hourly plus per-GB processed; a Gateway VPC Endpoint avoids this fee for S3/DynamoDB traffic"], uc:"Use to let private-subnet instances reach the internet outbound (e.g. software updates) without accepting inbound connections." },
     { n:"Internet Gateway", f:["Horizontally scaled, redundant, VPC-scoped — exactly one attached per VPC, no per-AZ deployment needed","Provides direct, two-way internet connectivity, unlike NAT Gateway's outbound-only path","Performs 1:1 NAT for instances with a public/Elastic IP; a route table's 0.0.0.0/0 → IGW route is what makes a subnet \"public\" in the first place"], uc:"Use to give public-subnet resources with a public IP direct inbound AND outbound internet access — attach one to the VPC, then route the public subnet to it." },
     { n:"Route 53", f:["Managed DNS + health checks","Routing policies: simple, weighted, latency, failover, geolocation, geoproximity, multivalue","Also does domain registration"], uc:"Use for DNS plus automatic failover/latency-based routing across multiple regions or endpoints." },
@@ -11679,6 +11684,7 @@ const RADIAL_CATEGORIES = [
     { n:"Cognito", f:["User sign-up/sign-in for apps","User Pools (auth, user directory) + Identity Pools (exchange for temporary AWS creds)","Supports social/SAML/OIDC federation into User Pools"], uc:"Use to add sign-up/sign-in to a customer-facing app and hand out temporary AWS credentials after login." },
     { n:"GuardDuty", f:["Managed threat detection service","Analyzes VPC Flow Logs, DNS, CloudTrail","No agents to install — analyzes existing log/event sources"], uc:"Use to continuously monitor an account for malicious activity without deploying any agents." },
     { n:"Security Hub", f:["Aggregates security findings/compliance","Central dashboard across GuardDuty, Inspector, Macie, etc","Also runs automated checks against standards like CIS/PCI"], uc:"Use to get one dashboard view of findings from GuardDuty, Inspector, Macie, etc. across accounts." },
+    { n:"Inspector", f:["Continuously scans EC2 instances, container images in ECR, and Lambda functions for vulnerabilities","Finds known CVEs and unintended network exposure — no manual scan scheduling needed","Automatically rescans on relevant changes (new package installed, new CVE published) and publishes findings to EventBridge/Security Hub"], uc:"Use to continuously find CVEs and unintended network exposure across EC2/ECR/Lambda without standing up or scheduling your own vulnerability scanner." },
     { n:"Shield", f:["DDoS protection: Standard (free, automatic) or Advanced (paid)","Advanced adds 24/7 DRT support + cost protection","Standard covers all customers by default at the network/transport layer","On Global Accelerator, Advanced only gives L3/4 protection directly — auto-deployed WAF rules for L7 attacks land on the downstream ALB/CloudFront instead, since GA can't have WAF attached to it"], uc:"Use Standard by default (always on, free); add Advanced when you need DRT support and DDoS cost protection guarantees." },
     { n:"WAF", f:["Web app firewall for CloudFront/ALB/API GW","Blocks SQLi, XSS via rule sets","Rule types: managed rule groups (AWS/Marketplace), custom rules, rate-based rules"], uc:"Use to block common web exploits (SQLi, XSS) at CloudFront/ALB/API Gateway before they reach your app." },
     { n:"Firewall Manager", f:["Centrally manages WAF, Shield Advanced, security groups, Network Firewall, and Route 53 Resolver DNS Firewall across an Organization","Requires AWS Organizations (all features) plus a delegated Firewall Manager administrator account","Auto-applies policies to new accounts/resources as they join, not just the ones that existed when the policy was created"], uc:"Use to define WAF/Shield/security-group rules once and have them auto-enforced across every account in an Organization, including future ones." },
@@ -11731,6 +11737,7 @@ const RADIAL_DOC_URLS = {
   "Subnets":"https://docs.aws.amazon.com/vpc/latest/userguide/configure-subnets.html",
   "Security Groups":"https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html",
   "Network ACL":"https://docs.aws.amazon.com/vpc/latest/userguide/vpc-network-acls.html",
+  "VPC Flow Logs":"https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs.html",
   "NAT Gateway":"https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway.html",
   "Internet Gateway":"https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Internet_Gateway.html",
   "Route 53":"https://aws.amazon.com/route53/",
@@ -11757,7 +11764,7 @@ const RADIAL_DOC_URLS = {
   "KMS":"https://aws.amazon.com/kms/", "Secrets Manager":"https://aws.amazon.com/secrets-manager/",
   "Cognito":"https://aws.amazon.com/cognito/", "GuardDuty":"https://aws.amazon.com/guardduty/",
   "Security Hub":"https://aws.amazon.com/security-hub/", "Shield":"https://aws.amazon.com/shield/",
-  "WAF":"https://aws.amazon.com/waf/", "Firewall Manager":"https://aws.amazon.com/firewall-manager/", "Macie":"https://aws.amazon.com/macie/",
+  "WAF":"https://aws.amazon.com/waf/", "Firewall Manager":"https://aws.amazon.com/firewall-manager/", "Network Firewall":"https://aws.amazon.com/network-firewall/", "Inspector":"https://aws.amazon.com/inspector/", "Macie":"https://aws.amazon.com/macie/",
   "ACM":"https://aws.amazon.com/certificate-manager/",
   "STS":"https://docs.aws.amazon.com/STS/latest/APIReference/welcome.html",
   "CloudWatch":"https://aws.amazon.com/cloudwatch/", "CloudTrail":"https://aws.amazon.com/cloudtrail/",
@@ -11812,7 +11819,9 @@ const SERVICE_CONNECTIONS = {
   "On-Premises": ["Direct Connect","VPN (Site-to-Site)","DataSync","Snowball","Storage Gateway","Database Migration Service"],
   "Region": ["VPC","Route 53","CloudFront","Global Accelerator","S3"],
   "Availability Zone": ["Subnets","NAT Gateway","VPC"],
-  "VPC": ["EC2","RDS","ELB","Route 53","Transit Gateway","VPC Endpoints","Direct Connect","VPN (Site-to-Site)","Subnets","Security Groups","Network ACL","NAT Gateway","Internet Gateway","Region"],
+  "VPC": ["EC2","RDS","ELB","Route 53","Transit Gateway","VPC Endpoints","Direct Connect","VPN (Site-to-Site)","Subnets","Security Groups","Network ACL","Network Firewall","VPC Flow Logs","NAT Gateway","Internet Gateway","Region"],
+  "Network Firewall": ["VPC"],
+  "VPC Flow Logs": ["CloudWatch","S3","Kinesis Data Firehose"],
   "Subnets": ["VPC","NAT Gateway","Internet Gateway","Network ACL","ELB","EC2","RDS","Availability Zone"],
   "Security Groups": ["EC2","RDS","ELB","Lambda"],
   "Network ACL": ["Subnets","VPC"],
@@ -11860,9 +11869,10 @@ const SERVICE_CONNECTIONS = {
   "Cognito": ["IAM","STS"],
   "GuardDuty": ["Security Hub","VPC"],
   "Security Hub": [],
+  "Inspector": ["EventBridge","Security Hub"],
   "Shield": ["CloudFront","ELB","Route 53","EC2","Global Accelerator","WAF"],
   "WAF": ["CloudFront","ELB","API Gateway"],
-  "Firewall Manager": ["Organizations","WAF","Shield","Security Groups"],
+  "Firewall Manager": ["Organizations","WAF","Shield","Security Groups","Network Firewall"],
   "Macie": ["Security Hub"],
   "ACM": ["CloudFront","ELB","API Gateway"],
   "STS": [],
@@ -11911,6 +11921,7 @@ const SERVICE_VARIATIONS = {
   "WAF": ["Managed Rule Groups","Custom Rules","Rate-based Rules"],
   "Systems Manager": ["Session Manager","Patch Manager","Parameter Store","Run Command"],
   "Cognito": ["User Pools","Identity Pools"],
+  "Control Tower": ["Preventive Guardrail (SCP)","Detective Guardrail (Config rule)"],
 };
 
 /* Services where multiple variations genuinely coexist in one real architecture (e.g. an
@@ -16162,6 +16173,12 @@ const SANDBOX_ARCH_PATTERNS = [
   { id:"s3-replication-eventbridge-fanout", title:{en:"Automated Cross-Bucket Copy with EventBridge Fan-Out", uk:"Автоматичне копіювання між бакетами з розгалуженням через EventBridge"},
     services:["S3","S3 Replication","S3 Event Notifications","EventBridge","Lambda","SageMaker"],
     blurb:{en:"Files landing in an initial S3 bucket are automatically copied into an analysis bucket via S3 Replication — no manual copying and no custom copy-and-dispatch Lambda to write or run. The analysis bucket's S3 Event Notifications route ObjectCreated events to EventBridge (S3's one allowed destination type per notification config), and a single EventBridge rule fans out to both a Lambda function running pattern-matching code and a SageMaker Pipelines pipeline — EventBridge natively supports a SageMaker Pipeline as a rule target, which is exactly how this sidesteps S3's one-destination-type limit with the least operational overhead.", uk:"Файли, що потрапляють у початковий бакет S3, автоматично копіюються в аналітичний бакет через S3 Replication — без ручного копіювання й без власної Lambda для копіювання та розсилки. S3 Event Notifications аналітичного бакета спрямовують події ObjectCreated в EventBridge (єдиний дозволений тип призначення S3 для одної конфігурації сповіщень), а єдине правило EventBridge розгалужується одразу на функцію Lambda з кодом пошуку патернів і на пайплайн SageMaker Pipelines — EventBridge нативно підтримує SageMaker Pipeline як ціль правила, і саме так це обходить обмеження S3 на один тип призначення з найменшими операційними витратами."} },
+  { id:"preventive-controls-only", title:{en:"Preventive-Only Security Controls", uk:"Лише превентивні засоби контролю безпеки"},
+    services:["Organizations","IAM","Control Tower","WAF","Network Firewall","Security Groups","Network ACL","Shield"],
+    blurb:{en:"Every control here actively blocks or denies an action before it happens, in real time: Organizations SCPs and IAM policies deny disallowed API calls outright, Control Tower's pre-built preventive guardrails enforce SCP-based denials under the hood (right-click it and pick the Preventive Guardrail variant), WAF and Network Firewall filter malicious or unwanted traffic before it reaches an app or leaves the VPC, Security Groups/NACLs deny traffic by IP/port, and Shield Advanced actively mitigates DDoS traffic. Nothing here detects after the fact — that's the companion Detective-Only architecture's job.", uk:"Кожен засіб контролю тут активно блокує або забороняє дію ще до того, як вона станеться, у реальному часі: SCP Organizations та політики IAM прямо забороняють неприпустимі виклики API, попередньо створені превентивні guardrails Control Tower впроваджують заборони на основі SCP під капотом (клацни правою кнопкою й обери варіант Preventive Guardrail), WAF і Network Firewall фільтрують шкідливий чи небажаний трафік до того, як він досягне застосунку або покине VPC, Security Groups/NACL забороняють трафік за IP/портом, а Shield Advanced активно пом'якшує DDoS-трафік. Жоден із них не виявляє постфактум — це робота супутньої архітектури Detective-Only."} },
+  { id:"detective-controls-only", title:{en:"Detective-Only Security Controls", uk:"Лише детективні засоби контролю безпеки"},
+    services:["Config","Control Tower","CloudTrail","GuardDuty","Security Hub","Inspector","Macie","VPC Flow Logs","Trusted Advisor"],
+    blurb:{en:"Every control here only detects and alerts after the fact — none of them block anything themselves: Config continuously evaluates resource configuration against rules, Control Tower's detective guardrails flag non-compliant resources via Config under the hood (right-click it and pick the Detective Guardrail variant), CloudTrail logs every API call for later investigation, GuardDuty and Security Hub surface anomalies and aggregated findings, Inspector scans for known CVEs, Macie flags exposed sensitive data in S3, VPC Flow Logs record traffic that already happened, and Trusted Advisor flags best-practice violations. Pair with the companion Preventive-Only architecture to see the other half of AWS's defense-in-depth model.", uk:"Кожен засіб контролю тут лише виявляє й попереджає постфактум — жоден із них нічого не блокує самостійно: Config безперервно оцінює конфігурацію ресурсів за правилами, детективні guardrails Control Tower позначають невідповідні ресурси через Config під капотом (клацни правою кнопкою й обери варіант Detective Guardrail), CloudTrail логує кожен виклик API для подальшого розслідування, GuardDuty та Security Hub показують аномалії та агреговані знахідки, Inspector сканує на відомі CVE, Macie позначає відкриті чутливі дані в S3, VPC Flow Logs фіксують трафік, що вже стався, а Trusted Advisor позначає порушення найкращих практик. Поєднай із супутньою архітектурою Preventive-Only, щоб побачити другу половину моделі глибокоешелонованого захисту AWS."} },
 ];
 function sandboxMatchArchPatterns(){
   const names = new Set(sandboxNodes.map(n=>n.name));
@@ -16276,6 +16293,8 @@ const SANDBOX_ARCH_REAL_URLS = {
   "s3-lifecycle-cost-tiering": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html",
   "aurora-serverless-variable-load": "https://aws.amazon.com/rds/aurora/serverless/",
   "s3-replication-eventbridge-fanout": "https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-targets.html",
+  "preventive-controls-only": "https://docs.aws.amazon.com/controltower/latest/controlreference/control-behavior.html",
+  "detective-controls-only": "https://docs.aws.amazon.com/controltower/latest/controlreference/control-behavior.html",
 };
 function sandboxArchDocUrl(pattern, score){
   if(score >= 1 && SANDBOX_ARCH_REAL_URLS[pattern.id]) return SANDBOX_ARCH_REAL_URLS[pattern.id];
