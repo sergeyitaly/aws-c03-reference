@@ -3623,13 +3623,6 @@ const QUIZ_EN = [
   {k:"C", t:"Amazon Inspector", correct:false, why:"Inspector scans compute resources (EC2, containers, Lambda) for vulnerabilities — not S3 object content for PII."},
   {k:"D", t:"AWS Trusted Advisor", correct:false, why:"Trusted Advisor gives general best-practice checks across cost, performance, security configuration, and limits — it doesn't scan object content for sensitive data patterns."},
  ]},
-{domain:1, topic:"Secrets rotation", q:"An application's Lambda functions authenticate to an RDS database using a password. Security policy requires that this password be rotated automatically on a schedule without any application downtime or manual intervention. Which service should store the credential?",
- opts:[
-  {k:"A", t:"AWS Systems Manager Parameter Store (SecureString)", correct:false, why:"Parameter Store can store the secret encrypted, but it has no built-in automatic rotation capability — that would have to be built manually."},
-  {k:"B", t:"AWS Secrets Manager", correct:true, why:"Secrets Manager provides built-in automatic rotation via a Lambda rotation function on a schedule, with native RDS integration — matching the 'automatic, no manual intervention' requirement directly."},
-  {k:"C", t:"Environment variables on the Lambda function", correct:false, why:"Environment variables are static configuration — updating the password still requires manually redeploying the function, and there's no built-in rotation."},
-  {k:"D", t:"A hardcoded value in the application's source code", correct:false, why:"Hardcoded credentials never rotate automatically and are a serious security anti-pattern."},
- ]},
 {domain:1, topic:"VPC endpoint policy", q:"A company uses a Gateway VPC Endpoint for S3 so private EC2 instances can reach S3 without a NAT Gateway. They now want those instances to be able to reach ONLY one specific company-owned bucket through that endpoint, not any other S3 bucket in any account. What should they configure?",
  opts:[
   {k:"A", t:"A Security Group rule limiting outbound traffic to the S3 IP range", correct:false, why:"S3 uses a large, changing set of IP ranges reached via prefix lists, and this approach doesn't distinguish between individual buckets at all."},
@@ -3840,13 +3833,6 @@ const QUIZ_EN = [
   {k:"C", t:"Amazon FSx for Windows File Server", correct:false, why:"FSx for Windows is SMB/AD-integrated for Windows workloads — not the high-throughput HPC/ML training filesystem needed here."},
   {k:"D", t:"S3 mounted directly as a local filesystem on each training instance", correct:false, why:"S3 isn't a true POSIX filesystem and doesn't offer the low-latency, high-throughput local access pattern large-scale model training needs."},
  ]},
-{domain:3, topic:"API Gateway caching", q:"A public REST API built on API Gateway and Lambda serves the same product-lookup responses repeatedly for popular items, and the team wants to reduce both backend Lambda invocations and response latency for these repeated requests.",
- opts:[
-  {k:"A", t:"Increase the Lambda function's memory allocation", correct:false, why:"This can speed up individual invocations but doesn't reduce the number of times the backend is called for identical, repeated requests."},
-  {k:"B", t:"Enable API Gateway response caching", correct:true, why:"API Gateway can cache responses for a configurable TTL, serving repeated identical requests directly from the cache without invoking the backend Lambda at all, cutting both load and latency."},
-  {k:"C", t:"Switch the Lambda function to use Reserved Concurrency", correct:false, why:"Reserved Concurrency caps/guarantees maximum concurrent executions — a capacity-control knob, not a caching mechanism to reduce repeated invocations."},
-  {k:"D", t:"Add an SQS queue in front of the Lambda function", correct:false, why:"SQS is for asynchronous decoupling of write-style workloads, not for caching synchronous read responses to reduce repeated latency."},
- ]},
 {domain:3, topic:"EKS Fargate", q:"A team wants to run containerized workloads on Kubernetes but does not want to provision, patch, or manage any underlying EC2 nodes at all — they want pods to scale without any node-capacity planning.",
  opts:[
   {k:"A", t:"EKS with self-managed EC2 node groups", correct:false, why:"Self-managed nodes require the team to provision, patch, and scale the underlying EC2 Auto Scaling Group themselves — exactly what they want to avoid."},
@@ -3944,13 +3930,6 @@ const QUIZ_EN = [
   {k:"B", t:"Manually documenting the required WAF rules and asking each account team to apply them", correct:false, why:"Manual, per-team application doesn't guarantee consistency and provides no central enforcement or drift detection."},
   {k:"C", t:"AWS Config rules in each account checking for WAF presence", correct:false, why:"Config can detect non-compliance after the fact but doesn't itself deploy or enforce the WAF/Network Firewall rules across accounts."},
   {k:"D", t:"A single WAF web ACL shared via AWS RAM", correct:false, why:"RAM can share some resources, but centrally enforcing consistent WAF/Network Firewall/Shield policy org-wide — including on future accounts — is exactly Firewall Manager's job, not RAM's."},
- ]},
-{domain:1, topic:"S3 Object Lock", q:"A company must ensure that certain compliance records stored in S3 cannot be deleted or overwritten by ANYONE, including the AWS account's root user, until a defined retention period expires. Which S3 feature satisfies this?",
- opts:[
-  {k:"A", t:"S3 Versioning alone", correct:false, why:"Versioning preserves prior versions but doesn't prevent a user (including root) from deleting objects or versions outright."},
-  {k:"B", t:"S3 Object Lock in Compliance mode", correct:true, why:"Compliance mode enforces WORM (write-once-read-many) protection that not even the root user can override until retention expires — exactly this requirement."},
-  {k:"C", t:"S3 Object Lock in Governance mode", correct:false, why:"Governance mode allows users with special permissions (including root) to shorten retention or delete objects — it doesn't meet an 'absolutely nobody' requirement."},
-  {k:"D", t:"A restrictive bucket policy denying DeleteObject", correct:false, why:"A bucket policy can be changed by anyone with sufficient IAM permission, including root — it's not an immutable guarantee like Object Lock compliance mode."},
  ]},
 {domain:2, topic:"AppSync", q:"A mobile app needs an API where a single client request can fetch nested, related data from multiple backend data sources in one round trip, plus real-time subscriptions for live updates and offline data sync for mobile clients. Which service fits best?",
  opts:[
@@ -4550,13 +4529,6 @@ Which line represents the most dangerous over-grant, effectively letting any dev
   {t:"Call each of the three systems directly and sequentially from the order service", correct:false, why:"This tightly couples the order service to all three downstream systems and their availability/latency, and adds unnecessary sequential delay for what could happen in parallel."},
   {t:"Use a single SQS queue with three separate consumers all polling it", correct:false, why:"A single SQS queue delivers each message to only ONE consumer (whichever polls it first) — it can't broadcast the same message to all three systems the way SNS fan-out does."},
   {t:"Write the event to a DynamoDB table and have each system poll the table", correct:false, why:"This requires each downstream system to build its own polling logic against the table — far more complex and higher-latency than SNS's built-in fan-out push."},
- ]},
-{domain:2, topic:"Route 53 failover", q:"A company wants Route 53 to automatically stop directing traffic to their primary web server if it becomes unhealthy, redirecting users to a backup site instead, and to resume sending traffic to the primary once it recovers.",
- opts:[
-  {t:"Failover routing policy", correct:true, why:"With health checks on the primary and secondary records, this works because Failover routing is specifically designed for active/passive setups: Route 53 monitors health checks and automatically routes to the secondary when the primary is unhealthy, then back to primary once it's healthy again."},
-  {t:"Weighted routing policy", correct:false, why:"Weighted routing splits traffic by a fixed percentage regardless of health — it doesn't automatically redirect ALL traffic away from an unhealthy endpoint."},
-  {t:"Simple routing policy", correct:false, why:"Simple routing returns a single static record with no health check awareness or automatic failover behavior at all."},
-  {t:"Latency-based routing policy", correct:false, why:"Latency-based routing picks the lowest-latency Region — it can optionally use health checks too, but it's not the purpose-built active/passive failover policy that Failover routing is."},
  ]},
 {domain:2, topic:"VPC gateways", q:"A VPC's private subnet instances need outbound-only internet access, while a separate requirement is that on-premises users need private connectivity into the VPC over an encrypted tunnel. Which two gateway types are needed respectively?",
  opts:[
@@ -5391,13 +5363,6 @@ Which line represents the most dangerous over-grant, effectively letting any dev
   {t:"Traffic is routed to the instance's public IP, then NAT'd internally", correct:false, why:"NLB routes directly to the private IP inside the VPC — there's no public-IP-then-NAT step involved."},
   {t:"Traffic is routed to whichever Elastic IP is currently associated with the instance", correct:false, why:"Elastic IPs are never used for NLB-to-target routing — only the primary private IP is used, regardless of any EIP association."},
  ]},
-{domain:4, topic:"Choosing between Savings Plans and Reserved Instances", q:"A company runs workloads across multiple EC2 instance families and Regions, and also uses some Fargate and Lambda, but still wants a meaningful discount with maximum flexibility to shift usage around. Which commitment option best fits, and why?",
- opts:[
-  {t:"Compute Savings Plans", correct:true, why:"They apply across any instance family/Region and even cover Fargate and Lambda, offering the most flexibility of any commitment option — at the cost of a smaller discount than more restrictive tiers."},
-  {t:"EC2 Instance Savings Plans, since they always provide the largest discount", correct:false, why:"EC2 Instance Savings Plans lock to one family+Region for a bigger discount — that's the opposite of the flexibility this scenario asks for."},
-  {t:"Standard Reserved Instances, since they're resellable and therefore the most flexible", correct:false, why:"Resale on the RI Marketplace is an exit option, not day-to-day flexibility — RIs are still locked to specific instance attributes unlike Compute Savings Plans."},
-  {t:"On-Demand Instances exclusively, since any commitment restricts flexibility", correct:false, why:"This forgoes any discount at all — Compute Savings Plans specifically provide a discount without sacrificing the flexibility this scenario needs."},
- ]},
 {domain:4, topic:"Eliminating NAT Gateway charges for S3 traffic", q:"Private EC2 instances access an S3 bucket by routing through a NAT Gateway, incurring per-GB data-processing charges for traffic that never actually needs to reach the public internet. What's the most cost-effective fix?",
  opts:[
   {t:"Add a Gateway VPC endpoint for S3", correct:true, why:"A Gateway endpoint routes that traffic via a route table entry, removing it from the NAT Gateway path entirely and eliminating the associated charges — at no cost and no security trade-off."},
@@ -5884,13 +5849,6 @@ const QUIZ_UK = [
   {k:"C", t:"Amazon Inspector", correct:false, why:"Inspector сканує обчислювальні ресурси (EC2, контейнери, Lambda) на вразливості — не вміст об'єктів S3 на PII."},
   {k:"D", t:"AWS Trusted Advisor", correct:false, why:"Trusted Advisor дає загальні перевірки найкращих практик щодо вартості, продуктивності, конфігурації безпеки й лімітів — він не сканує вміст об'єктів на патерни чутливих даних."},
  ]},
-{domain:1, topic:"Ротація секретів", q:"Lambda-функції застосунку автентифікуються до бази даних RDS за паролем. Політика безпеки вимагає автоматичної ротації цього пароля за розкладом без простою застосунку чи ручного втручання. Який сервіс має зберігати ці креденшли?",
- opts:[
-  {k:"A", t:"AWS Systems Manager Parameter Store (SecureString)", correct:false, why:"Parameter Store може зберігати секрет зашифрованим, але не має вбудованої автоматичної ротації — це довелось би побудувати вручну."},
-  {k:"B", t:"AWS Secrets Manager", correct:true, why:"Secrets Manager надає вбудовану автоматичну ротацію через Lambda-функцію ротації за розкладом, з нативною інтеграцією RDS — точно відповідає вимозі 'автоматично, без ручного втручання'."},
-  {k:"C", t:"Змінні середовища у Lambda-функції", correct:false, why:"Змінні середовища — це статична конфігурація — оновлення пароля все одно вимагає ручного передеплою функції, і вбудованої ротації немає."},
-  {k:"D", t:"Захардкоджене значення в коді застосунку", correct:false, why:"Захардкоджені креденшли ніколи не ротуються автоматично й є серйозним антипатерном безпеки."},
- ]},
 {domain:1, topic:"Політика VPC endpoint", q:"Компанія використовує Gateway VPC Endpoint для S3, щоб приватні EC2-інстанси могли дістатись S3 без NAT Gateway. Тепер вони хочуть, щоб ці інстанси могли дістатись ЛИШЕ до одного конкретного власного бакета через цей endpoint, а не до будь-якого іншого бакета S3 у будь-якому акаунті. Що варто налаштувати?",
  opts:[
   {k:"A", t:"Правило Security Group, що обмежує вихідний трафік діапазоном IP S3", correct:false, why:"S3 використовує великий, змінний набір діапазонів IP, доступний через prefix lists, і цей підхід взагалі не розрізняє окремі бакети."},
@@ -6101,13 +6059,6 @@ const QUIZ_UK = [
   {k:"C", t:"Amazon FSx for Windows File Server", correct:false, why:"FSx for Windows — це SMB, інтегрована з AD, для Windows-навантажень — не та файлова система для високопродуктивного HPC/ML-тренування, потрібна тут."},
   {k:"D", t:"S3, змонтований напряму як локальна файлова система на кожному тренувальному інстансі", correct:false, why:"S3 не є справжньою POSIX-файловою системою й не дає низько-затримного, високопродуктивного локального патерну доступу, потрібного для масштабного тренування моделей."},
  ]},
-{domain:3, topic:"Кешування API Gateway", q:"Публічний REST API на базі API Gateway і Lambda повторно обслуговує ті самі відповіді пошуку товарів для популярних елементів, і команда хоче знизити і кількість викликів бекенд-Lambda, і затримку відповіді для цих повторюваних запитів.",
- opts:[
-  {k:"A", t:"Збільшити виділену пам'ять Lambda-функції", correct:false, why:"Це може прискорити окремі виклики, але не знижує кількість викликів бекенду для ідентичних, повторюваних запитів."},
-  {k:"B", t:"Увімкнути кешування відповідей API Gateway", correct:true, why:"API Gateway може кешувати відповіді на налаштовуваний TTL, обслуговуючи повторювані ідентичні запити напряму з кешу без виклику бекенд-Lambda взагалі, знижуючи і навантаження, і затримку."},
-  {k:"C", t:"Перемкнути Lambda-функцію на Reserved Concurrency", correct:false, why:"Reserved Concurrency обмежує/гарантує максимальну кількість одночасних виконань — ручка контролю ємності, а не механізм кешування для зниження повторюваних викликів."},
-  {k:"D", t:"Додати чергу SQS перед Lambda-функцією", correct:false, why:"SQS призначена для асинхронного розв'язування write-навантажень, а не для кешування синхронних відповідей читання для зниження повторюваної затримки."},
- ]},
 {domain:3, topic:"EKS Fargate", q:"Команда хоче запускати контейнерні навантаження на Kubernetes, але зовсім не хоче виділяти, патчити чи керувати жодними базовими EC2-нодами — вона хоче, щоб поди масштабувались без жодного планування ємності нод.",
  opts:[
   {k:"A", t:"EKS із self-managed EC2 node groups", correct:false, why:"Self-managed ноди вимагають, щоб команда сама виділяла, патчила й масштабувала базову EC2 Auto Scaling Group — саме те, чого вони хочуть уникнути."},
@@ -6205,13 +6156,6 @@ const QUIZ_UK = [
   {k:"B", t:"Вручну задокументувати потрібні правила WAF і попросити кожну команду акаунта застосувати їх", correct:false, why:"Ручне, по-командне застосування не гарантує узгодженості й не дає централізованого впровадження чи виявлення відхилень."},
   {k:"C", t:"Правила AWS Config у кожному акаунті, що перевіряють наявність WAF", correct:false, why:"Config може виявити невідповідність постфактум, але сам не розгортає й не впроваджує правила WAF/Network Firewall по акаунтах."},
   {k:"D", t:"Один web ACL WAF, спільний через AWS RAM", correct:false, why:"RAM може ділитись деякими ресурсами, але централізоване узгоджене впровадження політики WAF/Network Firewall/Shield на всю організацію — включно з майбутніми акаунтами — це саме робота Firewall Manager, не RAM."},
- ]},
-{domain:1, topic:"S3 Object Lock", q:"Компанія має гарантувати, що певні комплаєнс-записи в S3 не можуть бути видалені чи перезаписані НІКИМ, включно з root-користувачем акаунта AWS, доки не завершиться визначений термін зберігання. Яка функція S3 задовольняє цю вимогу?",
- opts:[
-  {k:"A", t:"Лише версіонування S3", correct:false, why:"Версіонування зберігає попередні версії, але не заважає користувачу (включно з root) видалити об'єкти чи версії повністю."},
-  {k:"B", t:"S3 Object Lock у режимі Compliance", correct:true, why:"Режим Compliance забезпечує WORM-захист (write-once-read-many), який не може обійти навіть root-користувач до завершення терміну зберігання — саме ця вимога."},
-  {k:"C", t:"S3 Object Lock у режимі Governance", correct:false, why:"Режим Governance дозволяє користувачам зі спеціальними дозволами (включно з root) скоротити термін зберігання чи видалити об'єкти — не відповідає вимозі 'абсолютно ніхто'."},
-  {k:"D", t:"Обмежувальна bucket policy, що забороняє DeleteObject", correct:false, why:"Bucket policy може змінити будь-хто з достатніми IAM-дозволами, включно з root — це не незмінна гарантія, як режим Compliance в Object Lock."},
  ]},
 {domain:2, topic:"AppSync", q:"Мобільному застосунку потрібен API, де один клієнтський запит може отримати вкладені, пов'язані дані з кількох бекенд-джерел за один раунд-тріп, плюс real-time підписки для живих оновлень і офлайн-синхронізація даних для мобільних клієнтів. Який сервіс підходить найкраще?",
  opts:[
@@ -6811,13 +6755,6 @@ const QUIZ_UK = [
   {t:"Викликати кожну з трьох систем напряму й послідовно з сервісу замовлень", correct:false, why:"Це щільно зв'язує сервіс замовлень з усіма трьома подальшими системами та їх доступністю/затримкою, і додає зайву послідовну затримку для того, що могло б відбуватись паралельно."},
   {t:"Використати одну чергу SQS з трьома окремими споживачами, що всі її опитують", correct:false, why:"Одна черга SQS доставляє кожне повідомлення лише ОДНОМУ споживачеві (який опитає першим) — вона не може транслювати те саме повідомлення всім трьом системам, як це робить fan-out SNS."},
   {t:"Записати подію в таблицю DynamoDB, і кожна система опитує таблицю", correct:false, why:"Це вимагає, щоб кожна подальша система будувала власну логіку опитування таблиці — значно складніше й з вищою затримкою, ніж вбудований push fan-out SNS."},
- ]},
-{domain:2, topic:"Failover Route 53", q:"Компанія хоче, щоб Route 53 автоматично припиняв спрямовувати трафік на їхній основний веб-сервер, якщо він стає нездоровим, перенаправляючи користувачів натомість на резервний сайт, і відновлював надсилання трафіку на основний після відновлення.",
- opts:[
-  {t:"Політика Failover маршрутизації", correct:true, why:"З health checks на основному й резервному записах, це працює, бо Failover маршрутизація спеціально створена для налаштувань active/passive: Route 53 стежить за health checks і автоматично маршрутизує на secondary, коли primary нездоровий, а потім назад на primary, коли він знову здоровий."},
-  {t:"Політика Weighted маршрутизації", correct:false, why:"Weighted маршрутизація розподіляє трафік за фіксованим відсотком незалежно від здоров'я — вона не перенаправляє автоматично ВЕСЬ трафік від нездорового ендпоінта."},
-  {t:"Політика Simple маршрутизації", correct:false, why:"Simple маршрутизація повертає один статичний запис без обізнаності про health check чи автоматичної поведінки failover взагалі."},
-  {t:"Політика Latency-based маршрутизації", correct:false, why:"Latency-based маршрутизація обирає регіон з найменшою затримкою — вона може опційно також використовувати health checks, але це не спеціально створена політика active/passive failover, якою є Failover маршрутизація."},
  ]},
 {domain:2, topic:"Шлюзи VPC", q:"Інстансам приватної підмережі VPC потрібен виключно вихідний доступ до інтернету, тоді як окрема вимога полягає в тому, що локальним користувачам потрібне приватне з'єднання у VPC через зашифрований тунель. Які два типи шлюзів потрібні відповідно?",
  opts:[
@@ -7651,13 +7588,6 @@ const QUIZ_UK = [
   {t:"Трафік маршрутизується напряму за допомогою instance ID", correct:false, why:"Instance ID не є мережево-адресованим — маршрутизація завжди відбувається через реальну IP-адресу, конкретно первинну приватну IP цілі."},
   {t:"Трафік маршрутизується на публічну IP інстансу, потім NAT'иться внутрішньо", correct:false, why:"NLB маршрутизує напряму на приватну IP усередині VPC — жодного кроку публічна-IP-потім-NAT не задіяно."},
   {t:"Трафік маршрутизується на будь-яку Elastic IP, наразі асоційовану з інстансом", correct:false, why:"Elastic IP ніколи не використовуються для маршрутизації NLB до цілі — використовується лише первинна приватна IP, незалежно від будь-якої асоціації EIP."},
- ]},
-{domain:4, topic:"Вибір між Savings Plans і Reserved Instances", q:"Компанія використовує навантаження в кількох родинах інстансів EC2 і регіонах, а також частково Fargate й Lambda, але все одно хоче суттєву знижку з максимальною гнучкістю для переміщення використання. Який варіант зобов'язання підходить найкраще, і чому?",
- opts:[
-  {t:"Compute Savings Plans", correct:true, why:"Вони застосовуються до будь-якої родини інстансів/регіону і навіть покривають Fargate й Lambda, пропонуючи найбільшу гнучкість серед варіантів зобов'язань — ціною меншої знижки, ніж більш обмежені рівні."},
-  {t:"EC2 Instance Savings Plans, оскільки вони завжди дають найбільшу знижку", correct:false, why:"EC2 Instance Savings Plans прив'язані до однієї родини+регіону заради більшої знижки — це протилежне до гнучкості, якої вимагає сценарій."},
-  {t:"Стандартні Reserved Instances, оскільки їх можна перепродати й тому вони найгнучкіші", correct:false, why:"Перепродаж на RI Marketplace — це вихідний варіант, а не повсякденна гнучкість — RI все одно прив'язані до конкретних атрибутів інстансу на відміну від Compute Savings Plans."},
-  {t:"Виключно On-Demand інстанси, оскільки будь-яке зобов'язання обмежує гнучкість", correct:false, why:"Це відмовляється від будь-якої знижки взагалі — Compute Savings Plans якраз надають знижку, не жертвуючи гнучкістю, потрібною в цьому сценарії."},
  ]},
 {domain:4, topic:"Усунення плати NAT Gateway за трафік S3", q:"Приватні інстанси EC2 звертаються до бакета S3, маршрутизуючись через NAT Gateway, несучи плату за обробку даних за ГБ для трафіку, який насправді ніколи не потребує публічного інтернету. Яке найбільш економічно ефективне виправлення?",
  opts:[
