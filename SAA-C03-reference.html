@@ -1214,6 +1214,16 @@ const UI_STRINGS = {
   sandboxParkMenuItem: {en:"📦 Park (free board space)", uk:"📦 Відкласти (звільнити місце)"},
   sandboxClearBtn: {en:"Clear board", uk:"Очистити дошку"},
   sandboxLoadArchPlaceholder: {en:"Load a reference architecture…", uk:"Завантажити еталонну архітектуру…"},
+  sandboxBlueprintBtn: {en:"Blueprint", uk:"Креслення"},
+  sandboxBlueprintHint: {en:"Download the current board as an SVG diagram + Markdown spec + CloudFormation template", uk:"Завантажити поточну дошку як SVG-діаграму + Markdown-специфікацію + шаблон CloudFormation"},
+  sandboxBlueprintEmpty: {en:"Add at least one service to the board before generating a blueprint.", uk:"Додай хоча б один сервіс на дошку перед створенням креслення."},
+  sandboxBlueprintCustomTitle: {en:"Custom Sandbox Architecture", uk:"Власна архітектура Sandbox"},
+  sandboxBlueprintClosestMatch: {en:"Closest matching reference pattern", uk:"Найближчий еталонний патерн"},
+  sandboxBlueprintGeneratedBy: {en:"Generated from the AWS SAA-C03 Sandbox", uk:"Створено в Sandbox довідника AWS SAA-C03"},
+  sandboxBlueprintServicesHeading: {en:"Services", uk:"Сервіси"},
+  sandboxBlueprintConnectionsHeading: {en:"Connections", uk:"Зв'язки"},
+  sandboxBlueprintContainersHeading: {en:"Contains", uk:"Містить"},
+  sandboxBlueprintNoConnections: {en:"(none)", uk:"(немає)"},
   sandboxUndoBtn: {en:"Undo", uk:"Скасувати"},
   sandboxRedoBtn: {en:"Redo", uk:"Повторити"},
   sandboxZoomInBtn: {en:"Zoom in", uk:"Наблизити"},
@@ -12882,6 +12892,7 @@ function buildApp(){
             <select class="sandbox-load-arch-select" id="sandboxLoadArchSelect">
               <option value="">${T("sandboxLoadArchPlaceholder")}</option>
             </select>
+            <button class="sort-game-btn sandbox-blueprint-btn" id="sandboxBlueprintBtn" title="${T("sandboxBlueprintHint")}">⬇ ${T("sandboxBlueprintBtn")}</button>
             <span class="sandbox-zoom-group">
               <button class="sort-game-btn sandbox-zoom-btn" id="sandboxZoomOutBtn" title="${T("sandboxZoomOutBtn")}">−</button>
               <span class="sandbox-zoom-label" id="sandboxZoomLabel">100%</span>
@@ -16180,6 +16191,377 @@ function sandboxRenderGroups(){
     svg.appendChild(label);
   });
 }
+/* ---------------- Sandbox: downloadable blueprint (SVG diagram + Markdown spec) ----------------
+   Reconstructs the current board as a clean, standalone SVG (not a screenshot of the live,
+   interactive DOM — that would drag in hover/selection states and drag handles that don't belong
+   in a "blueprint") plus a plain-text spec, so a board built or loaded in the Sandbox can be saved
+   and shared outside the page. Pulls real theme colors via getComputedStyle since an exported file
+   opened on its own has no access to this page's CSS custom properties. */
+function sandboxBlueprintTitleAndBlurb(){
+  const matches = sandboxMatchArchPatterns();
+  const top = matches[0];
+  if(top && top.score >= 1){
+    return { title: top.pattern.title[currentLang], blurb: top.pattern.blurb[currentLang] };
+  }
+  if(top && top.score >= 0.34){
+    return { title: `${T("sandboxBlueprintClosestMatch")}: ${top.pattern.title[currentLang]}`, blurb: top.pattern.blurb[currentLang] };
+  }
+  return { title: T("sandboxBlueprintCustomTitle"), blurb: "" };
+}
+function sandboxBlueprintNodeBox(node){
+  const board = sandboxGetBoard();
+  const el = board ? board.querySelector(`.sandbox-node[data-id="${CSS.escape(node.id)}"]`) : null;
+  const hw = (el && el.offsetWidth ? el.offsetWidth : 120) / 2;
+  const hh = (el && el.offsetHeight ? el.offsetHeight : 36) / 2;
+  return { hw, hh };
+}
+function sandboxGenerateBlueprintSVG(){
+  const svgNS = "http://www.w3.org/2000/svg";
+  const styles = getComputedStyle(document.documentElement);
+  const cssVar = (name, fallback) => (styles.getPropertyValue(name) || "").trim() || fallback;
+  const colors = {
+    bg: cssVar("--bg", "#f7f7f8"),
+    panel: cssVar("--bg-panel", "#ffffff"),
+    border: cssVar("--border", "#e2e2e8"),
+    text: cssVar("--text", "#1a1a2e"),
+    textDim: cssVar("--text-dim", "#5b5b6b"),
+    accent: cssVar("--accent", "#5b47e0"),
+  };
+  const { title, blurb } = sandboxBlueprintTitleAndBlurb();
+
+  // Tight bounding box around every node (using real on-screen sizes) and every container box.
+  let minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
+  sandboxNodes.forEach(n=>{
+    const { hw, hh } = sandboxBlueprintNodeBox(n);
+    minX = Math.min(minX, n.x-hw); maxX = Math.max(maxX, n.x+hw);
+    minY = Math.min(minY, n.y-hh); maxY = Math.max(maxY, n.y+hh);
+  });
+  const groupBoxes = sandboxGroupLines().map(g=>({ g, bounds: sandboxGroupBounds(g.owner.id) })).filter(x=>x.bounds && x.bounds.memberCount>0);
+  groupBoxes.forEach(({bounds})=>{
+    minX = Math.min(minX, bounds.minX); maxX = Math.max(maxX, bounds.maxX);
+    minY = Math.min(minY, bounds.minY); maxY = Math.max(maxY, bounds.maxY);
+  });
+  if(!isFinite(minX)){ minX=0; minY=0; maxX=400; maxY=200; }
+  const MARGIN = 40;
+  const diagramW = (maxX-minX) + MARGIN*2;
+  const diagramH = (maxY-minY) + MARGIN*2;
+  const offsetX = MARGIN - minX, offsetY = MARGIN - minY;
+
+  const blurbLines = blurb ? wrapLabelText(blurb, diagramW - 80, 6.8) : [];
+  const HEADER_H = 74 + blurbLines.length*17;
+  const FOOTER_H = 34;
+  const totalW = Math.max(560, diagramW);
+  const totalH = HEADER_H + diagramH + FOOTER_H;
+
+  const root = document.createElementNS(svgNS, "svg");
+  root.setAttribute("xmlns", svgNS);
+  root.setAttribute("viewBox", `0 0 ${totalW} ${totalH}`);
+  root.setAttribute("width", totalW); root.setAttribute("height", totalH);
+  root.setAttribute("font-family", "system-ui, -apple-system, Segoe UI, Roboto, sans-serif");
+
+  const bgRect = document.createElementNS(svgNS, "rect");
+  bgRect.setAttribute("x",0); bgRect.setAttribute("y",0);
+  bgRect.setAttribute("width", totalW); bgRect.setAttribute("height", totalH);
+  bgRect.setAttribute("fill", colors.bg);
+  root.appendChild(bgRect);
+
+  // Header: title + optional blurb
+  const titleText = document.createElementNS(svgNS, "text");
+  titleText.setAttribute("x", 24); titleText.setAttribute("y", 32);
+  titleText.setAttribute("font-size", "19"); titleText.setAttribute("font-weight", "800");
+  titleText.setAttribute("fill", colors.text);
+  titleText.textContent = title;
+  root.appendChild(titleText);
+  blurbLines.forEach((line, i)=>{
+    const t = document.createElementNS(svgNS, "text");
+    t.setAttribute("x", 24); t.setAttribute("y", 54 + i*17);
+    t.setAttribute("font-size", "12.5"); t.setAttribute("fill", colors.textDim);
+    t.textContent = line;
+    root.appendChild(t);
+  });
+  const headerRule = document.createElementNS(svgNS, "line");
+  headerRule.setAttribute("x1", 24); headerRule.setAttribute("x2", totalW-24);
+  headerRule.setAttribute("y1", HEADER_H-8); headerRule.setAttribute("y2", HEADER_H-8);
+  headerRule.setAttribute("stroke", colors.border); headerRule.setAttribute("stroke-width", "1");
+  root.appendChild(headerRule);
+
+  // Diagram group, offset so the content starts right below the header
+  const diagram = document.createElementNS(svgNS, "g");
+  diagram.setAttribute("transform", `translate(${offsetX}, ${offsetY + HEADER_H})`);
+  root.appendChild(diagram);
+
+  // Arrowhead marker (defined once, referenced by every link line)
+  const defs = document.createElementNS(svgNS, "defs");
+  const marker = document.createElementNS(svgNS, "marker");
+  marker.setAttribute("id", "bpArrowhead");
+  marker.setAttribute("viewBox", "0 0 10 10");
+  marker.setAttribute("refX", "8"); marker.setAttribute("refY", "5");
+  marker.setAttribute("markerWidth", "7"); marker.setAttribute("markerHeight", "7");
+  marker.setAttribute("orient", "auto-start-reverse");
+  const arrowPath = document.createElementNS(svgNS, "path");
+  arrowPath.setAttribute("d", "M0,0 L10,5 L0,10 Z");
+  arrowPath.setAttribute("fill", colors.accent);
+  marker.appendChild(arrowPath);
+  defs.appendChild(marker);
+  root.appendChild(defs);
+
+  // Container boxes (VPC/Subnets etc.), smallest first so outer containers paint on top
+  groupBoxes.sort((a,b)=> (a.bounds.maxX-a.bounds.minX)*(a.bounds.maxY-a.bounds.minY) - (b.bounds.maxX-b.bounds.minX)*(b.bounds.maxY-b.bounds.minY));
+  groupBoxes.forEach(({g, bounds})=>{
+    const meta = sandboxFindServiceMeta(g.owner.name);
+    const color = meta ? meta.cat.color : colors.accent;
+    const rect = document.createElementNS(svgNS, "rect");
+    rect.setAttribute("x", bounds.minX); rect.setAttribute("y", bounds.minY);
+    rect.setAttribute("width", Math.max(1, bounds.maxX-bounds.minX)); rect.setAttribute("height", Math.max(1, bounds.maxY-bounds.minY));
+    rect.setAttribute("rx", 12);
+    rect.setAttribute("fill", color); rect.setAttribute("fill-opacity", "0.07");
+    rect.setAttribute("stroke", color); rect.setAttribute("stroke-width", "2");
+    const dash = SANDBOX_CONTAINER_DASH[g.owner.name] || "6 4";
+    if(dash !== "none") rect.setAttribute("stroke-dasharray", dash);
+    diagram.appendChild(rect);
+    const label = document.createElementNS(svgNS, "text");
+    label.setAttribute("x", bounds.minX+10); label.setAttribute("y", bounds.minY+18);
+    label.setAttribute("fill", color); label.setAttribute("font-size", "11"); label.setAttribute("font-weight", "800");
+    label.textContent = g.owner.id;
+    diagram.appendChild(label);
+  });
+
+  // Links, pulled back off each node's center exactly like the on-screen board
+  sandboxLinks.forEach(([a,b])=>{
+    if(sandboxIsContainerLink(a,b)) return;
+    const na = sandboxNodeById(a), nb = sandboxNodeById(b);
+    if(!na || !nb) return;
+    const dx = nb.x-na.x, dy = nb.y-na.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    const pullback = Math.min(45, dist*0.4);
+    const sx = na.x + (dx/dist)*pullback, sy = na.y + (dy/dist)*pullback;
+    const ex = nb.x - (dx/dist)*pullback, ey = nb.y - (dy/dist)*pullback;
+    const line = document.createElementNS(svgNS, "line");
+    line.setAttribute("x1", sx); line.setAttribute("y1", sy);
+    line.setAttribute("x2", ex); line.setAttribute("y2", ey);
+    line.setAttribute("stroke", colors.accent); line.setAttribute("stroke-width", "2");
+    line.setAttribute("marker-end", "url(#bpArrowhead)");
+    diagram.appendChild(line);
+  });
+
+  // Nodes: a rounded pill matching the on-screen look (colored icon badge + id + variant)
+  sandboxNodes.forEach(node=>{
+    const meta = sandboxFindServiceMeta(node.name);
+    const color = meta ? meta.cat.color : "#888";
+    const { hw, hh } = sandboxBlueprintNodeBox(node);
+    const g = document.createElementNS(svgNS, "g");
+    const rect = document.createElementNS(svgNS, "rect");
+    rect.setAttribute("x", node.x-hw); rect.setAttribute("y", node.y-hh);
+    rect.setAttribute("width", hw*2); rect.setAttribute("height", hh*2);
+    rect.setAttribute("rx", 10);
+    rect.setAttribute("fill", colors.panel); rect.setAttribute("stroke", colors.border); rect.setAttribute("stroke-width", "2");
+    g.appendChild(rect);
+    const dot = document.createElementNS(svgNS, "circle");
+    dot.setAttribute("cx", node.x-hw+18); dot.setAttribute("cy", node.y);
+    dot.setAttribute("r", 8);
+    dot.setAttribute("fill", color);
+    g.appendChild(dot);
+    const variantLabel = sandboxVariantLabel(node);
+    const label = document.createElementNS(svgNS, "text");
+    label.setAttribute("x", node.x-hw+34); label.setAttribute("y", node.y+4);
+    label.setAttribute("font-size", "12.5"); label.setAttribute("font-weight", "700");
+    label.setAttribute("fill", colors.text);
+    label.textContent = node.id + (variantLabel ? ` · ${variantLabel}` : "");
+    g.appendChild(label);
+    diagram.appendChild(g);
+  });
+
+  const footer = document.createElementNS(svgNS, "text");
+  footer.setAttribute("x", 24); footer.setAttribute("y", totalH-14);
+  footer.setAttribute("font-size", "10.5"); footer.setAttribute("fill", colors.textDim);
+  footer.textContent = `${T("sandboxBlueprintGeneratedBy")} — ${new Date().toISOString().slice(0,10)}`;
+  root.appendChild(footer);
+
+  return new XMLSerializer().serializeToString(root);
+}
+function sandboxGenerateBlueprintMarkdown(){
+  const { title, blurb } = sandboxBlueprintTitleAndBlurb();
+  const lines = [`# ${title}`, ""];
+  if(blurb) lines.push(blurb, "");
+  lines.push(`## ${T("sandboxBlueprintServicesHeading")}`, "");
+  sandboxNodes.forEach(n=>{
+    const variantLabel = sandboxVariantLabel(n);
+    lines.push(`- **${n.id}**${variantLabel ? ` (${variantLabel})` : ""} — ${n.name}`);
+  });
+  lines.push("", `## ${T("sandboxBlueprintConnectionsHeading")}`, "");
+  const connLines = sandboxLinks.filter(([a,b])=>!sandboxIsContainerLink(a,b)).map(([a,b])=>{
+    const na = sandboxNodeById(a), nb = sandboxNodeById(b);
+    return (na && nb) ? `- ${na.id} → ${nb.id}` : null;
+  }).filter(Boolean);
+  lines.push(...(connLines.length ? connLines : [T("sandboxBlueprintNoConnections")]));
+  const groups = sandboxGroupLines();
+  if(groups.length){
+    lines.push("", `## ${T("sandboxBlueprintContainersHeading")}`, "");
+    groups.forEach(g=>{
+      lines.push(`- **${g.owner.id}** ${T("sandboxBlueprintContainersHeading").toLowerCase()}: ${g.members.map(m=>m.id).join(", ")}`);
+    });
+  }
+  lines.push("", "---", `_${T("sandboxBlueprintGeneratedBy")} — ${new Date().toISOString().slice(0,10)}_`);
+  return lines.join("\n");
+}
+/* Real, documented CloudFormation resource types per sandbox service (node.name === RADIAL_CATEGORIES
+   service "n"). Only services with a genuine, stable AWS::Service::Resource type get a `type` +
+   illustrative `lines` (pre-formatted YAML property lines, values marked TODO where a real
+   environment-specific value — a VPC/subnet/AMI ID — can't be known generically). Everything else
+   (console/API-only enablement, physical/ordering constructs, or a property of another resource
+   rather than a resource of its own) is intentionally left unmapped and surfaced as a comment
+   instead of a fabricated resource type. */
+const SANDBOX_CFN_MAP = {
+  "EC2": {type:"AWS::EC2::Instance", lines:["ImageId: ami-0123456789abcdef0  # TODO: current AMI for your region","InstanceType: t3.micro"]},
+  "Lambda": {type:"AWS::Lambda::Function", lines:["Runtime: python3.13","Handler: index.handler","Role: !GetAtt ExecutionRole.Arn  # TODO: an IAM role ARN","Code:","  ZipFile: |","    def handler(event, context):","        return {\"statusCode\": 200}"]},
+  "Elastic Beanstalk": {type:"AWS::ElasticBeanstalk::Environment", lines:["ApplicationName: !Ref BeanstalkApp  # TODO: an AWS::ElasticBeanstalk::Application","SolutionStackName: \"64bit Amazon Linux 2023 v4.0.0 running Python 3.12\""]},
+  "ECS": {type:"AWS::ECS::Service", lines:["Cluster: !Ref EcsCluster  # TODO: an AWS::ECS::Cluster","TaskDefinition: !Ref TaskDef  # TODO: an AWS::ECS::TaskDefinition","DesiredCount: 1"]},
+  "EKS": {type:"AWS::EKS::Cluster", lines:["Name: my-cluster","RoleArn: !GetAtt EksRole.Arn  # TODO: an IAM role ARN","ResourcesVpcConfig:","  SubnetIds: [subnet-TODO1, subnet-TODO2]"]},
+  "ECR": {type:"AWS::ECR::Repository", lines:["RepositoryName: my-app"]},
+  "Auto Scaling": {type:"AWS::AutoScaling::AutoScalingGroup", lines:["MinSize: \"1\"","MaxSize: \"3\"","DesiredCapacity: \"1\"","AvailabilityZones: !GetAZs \"\"","LaunchTemplate:","  LaunchTemplateId: !Ref LaunchTemplate  # TODO: an AWS::EC2::LaunchTemplate","  Version: !GetAtt LaunchTemplate.LatestVersionNumber"]},
+  "Batch": {type:"AWS::Batch::JobQueue", lines:["JobQueueName: my-queue","Priority: 1","ComputeEnvironmentOrder:","  - Order: 1","    ComputeEnvironment: !Ref ComputeEnv  # TODO: an AWS::Batch::ComputeEnvironment"]},
+  "Lightsail": {type:"AWS::Lightsail::Instance", lines:["InstanceName: my-instance","BlueprintId: amazon_linux_2023","BundleId: nano_3_0","AvailabilityZone: !Select [0, !GetAZs \"\"]"]},
+  "App Runner": {type:"AWS::AppRunner::Service", lines:["ServiceName: my-service","SourceConfiguration:","  ImageRepository:","    ImageIdentifier: public.ecr.aws/aws-containers/hello-app-runner:latest  # TODO: your image","    ImageRepositoryType: ECR_PUBLIC"]},
+  "S3": {type:"AWS::S3::Bucket", lines:["BucketName: !Sub \"my-bucket-${AWS::AccountId}\""]},
+  "EBS": {type:"AWS::EC2::Volume", lines:["Size: 20","VolumeType: gp3","AvailabilityZone: !Select [0, !GetAZs \"\"]"]},
+  "EFS": {type:"AWS::EFS::FileSystem", lines:["Encrypted: true"]},
+  "FSx": {type:"AWS::FSx::FileSystem", lines:["FileSystemType: LUSTRE  # or WINDOWS / ONTAP / OPENZFS","SubnetIds: [subnet-TODO1]  # TODO: at least one subnet"]},
+  "Storage Gateway": {type:"AWS::StorageGateway::Gateway", lines:["GatewayName: my-gateway","GatewayTimezone: GMT","GatewayType: FILE_S3"]},
+  "AWS Transfer Family": {type:"AWS::Transfer::Server", lines:["Protocols: [SFTP]","EndpointType: PUBLIC"]},
+  "DataSync": {type:"AWS::DataSync::Task", lines:["SourceLocationArn: arn:aws:datasync:REGION:ACCOUNT:location/loc-TODO  # TODO","DestinationLocationArn: arn:aws:datasync:REGION:ACCOUNT:location/loc-TODO  # TODO"]},
+  "AWS Backup": {type:"AWS::Backup::BackupPlan", lines:["BackupPlan:","  BackupPlanName: my-backup-plan","  BackupPlanRule:","    - RuleName: DailyBackups","      TargetBackupVault: Default","      ScheduleExpression: \"cron(0 5 * * ? *)\""]},
+  "RDS": {type:"AWS::RDS::DBInstance", lines:["Engine: postgres","DBInstanceClass: db.t3.micro","AllocatedStorage: \"20\"","MasterUsername: admin","MasterUserPassword: \"{{resolve:secretsmanager:my-db-secret}}\"  # TODO: a real Secrets Manager secret"]},
+  "Aurora": {type:"AWS::RDS::DBCluster", lines:["Engine: aurora-postgresql","MasterUsername: admin","MasterUserPassword: \"{{resolve:secretsmanager:my-db-secret}}\"  # TODO: a real Secrets Manager secret"]},
+  "DynamoDB": {type:"AWS::DynamoDB::Table", lines:["BillingMode: PAY_PER_REQUEST","AttributeDefinitions:","  - AttributeName: id","    AttributeType: S","KeySchema:","  - AttributeName: id","    KeyType: HASH"]},
+  "ElastiCache": {type:"AWS::ElastiCache::CacheCluster", lines:["Engine: redis","CacheNodeType: cache.t3.micro","NumCacheNodes: 1"]},
+  "MemoryDB": {type:"AWS::MemoryDB::Cluster", lines:["ClusterName: my-cluster","NodeType: db.t4g.small","ACLName: open-access  # TODO: a real AWS::MemoryDB::ACL"]},
+  "Redshift": {type:"AWS::Redshift::Cluster", lines:["ClusterType: single-node","NodeType: dc2.large","DBName: mydb","MasterUsername: admin","MasterUserPassword: \"{{resolve:secretsmanager:my-db-secret}}\"  # TODO: a real Secrets Manager secret"]},
+  "Neptune": {type:"AWS::Neptune::DBCluster", lines:["EngineVersion: \"1.3\""]},
+  "DocumentDB": {type:"AWS::DocDB::DBCluster", lines:["MasterUsername: admin","MasterUserPassword: \"{{resolve:secretsmanager:my-db-secret}}\"  # TODO: a real Secrets Manager secret"]},
+  "Database Migration Service": {type:"AWS::DMS::ReplicationInstance", lines:["ReplicationInstanceClass: dms.t3.micro"]},
+  "Timestream": {type:"AWS::Timestream::Database", lines:["DatabaseName: my-timeseries-db"]},
+  "VPC": {type:"AWS::EC2::VPC", lines:["CidrBlock: 10.0.0.0/16"]},
+  "Subnets": {type:"AWS::EC2::Subnet", lines:["VpcId: !Ref VPC  # TODO: reference your VPC resource","CidrBlock: 10.0.1.0/24","AvailabilityZone: !Select [0, !GetAZs \"\"]"]},
+  "Security Groups": {type:"AWS::EC2::SecurityGroup", lines:["GroupDescription: Sandbox-generated security group","VpcId: !Ref VPC  # TODO: reference your VPC resource"]},
+  "Network ACL": {type:"AWS::EC2::NetworkAcl", lines:["VpcId: !Ref VPC  # TODO: reference your VPC resource"]},
+  "Network Firewall": {type:"AWS::NetworkFirewall::Firewall", lines:["FirewallName: my-firewall","FirewallPolicyArn: arn:aws:network-firewall:REGION:ACCOUNT:firewall-policy/my-policy  # TODO","VpcId: !Ref VPC  # TODO: reference your VPC resource","SubnetMappings:","  - SubnetId: !Ref Subnets  # TODO: reference your subnet resource"]},
+  "VPC Flow Logs": {type:"AWS::EC2::FlowLog", lines:["ResourceType: VPC","ResourceId: !Ref VPC  # TODO: reference your VPC resource","TrafficType: ALL","LogDestinationType: cloud-watch-logs","DeliverLogsPermissionArn: !GetAtt FlowLogsRole.Arn  # TODO: an IAM role ARN","LogGroupName: !Ref FlowLogsGroup  # TODO: a log group"]},
+  "NAT Gateway": {type:"AWS::EC2::NatGateway", lines:["SubnetId: !Ref Subnets  # TODO: reference your subnet resource","AllocationId: !GetAtt NatEip.AllocationId  # TODO: an AWS::EC2::EIP"]},
+  "Internet Gateway": {type:"AWS::EC2::InternetGateway", lines:[]},
+  "Route 53": {type:"AWS::Route53::RecordSet", lines:["HostedZoneName: example.com.  # TODO: your hosted zone","Name: app.example.com.","Type: A","TTL: \"300\"","ResourceRecords: [\"203.0.113.10\"]  # TODO: a real IP, or use AliasTarget for an ALB/CloudFront"]},
+  "CloudFront": {type:"AWS::CloudFront::Distribution", lines:["DistributionConfig:","  Enabled: true","  DefaultCacheBehavior:","    TargetOriginId: primaryOrigin","    ViewerProtocolPolicy: redirect-to-https","    CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6  # AWS Managed-CachingOptimized","  Origins:","    - Id: primaryOrigin","      DomainName: my-bucket.s3.amazonaws.com  # TODO: your origin's domain name","      S3OriginConfig: {}"]},
+  "ELB": {type:"AWS::ElasticLoadBalancingV2::LoadBalancer", lines:["Type: application","Subnets: [subnet-TODO1, subnet-TODO2]  # TODO: at least two subnets in different AZs"]},
+  "API Gateway": {type:"AWS::ApiGateway::RestApi", lines:["Name: my-api"]},
+  "Direct Connect": {type:"AWS::DirectConnect::Connection", lines:["Location: EqDC2  # TODO: a real DX location code","Bandwidth: 1Gbps","ConnectionName: my-dx-connection"]},
+  "Transit Gateway": {type:"AWS::EC2::TransitGateway", lines:[]},
+  "VPN (Site-to-Site)": {type:"AWS::EC2::VPNConnection", lines:["Type: ipsec.1","CustomerGatewayId: !Ref CustomerGateway  # TODO: an AWS::EC2::CustomerGateway","StaticRoutesOnly: true","TransitGatewayId: !Ref TransitGateway  # TODO: reference your Transit Gateway (or use VpnGatewayId instead)"]},
+  "VPC Endpoints": {type:"AWS::EC2::VPCEndpoint", lines:["ServiceName: !Sub \"com.amazonaws.${AWS::Region}.s3\"","VpcId: !Ref VPC  # TODO: reference your VPC resource"]},
+  "Global Accelerator": {type:"AWS::GlobalAccelerator::Accelerator", lines:["Name: my-accelerator"]},
+  "SQS": {type:"AWS::SQS::Queue", lines:[]},
+  "SNS": {type:"AWS::SNS::Topic", lines:[]},
+  "EventBridge": {type:"AWS::Events::Rule", lines:["EventPattern:","  source: [\"aws.ec2\"]  # TODO: the real event source/pattern you want to match","Targets:","  - Id: target1","    Arn: !GetAtt TargetFunction.Arn  # TODO: the ARN of the target resource"]},
+  "Step Functions": {type:"AWS::StepFunctions::StateMachine", lines:["RoleArn: !GetAtt StatesRole.Arn  # TODO: an IAM role ARN","DefinitionString: |","  {","    \"StartAt\": \"HelloWorld\",","    \"States\": { \"HelloWorld\": { \"Type\": \"Pass\", \"End\": true } }","  }"]},
+  "AppSync": {type:"AWS::AppSync::GraphQLApi", lines:["Name: my-api","AuthenticationType: API_KEY"]},
+  "MQ": {type:"AWS::AmazonMQ::Broker", lines:["BrokerName: my-broker","EngineType: ACTIVEMQ","EngineVersion: \"5.18\"","HostInstanceType: mq.t3.micro","DeploymentMode: SINGLE_INSTANCE","Users:","  - Username: admin","    Password: \"{{resolve:secretsmanager:my-mq-secret}}\"  # TODO: a real Secrets Manager secret"]},
+  "Athena": {type:"AWS::Athena::WorkGroup", lines:["Name: my-workgroup"]},
+  "EMR": {type:"AWS::EMR::Cluster", lines:["Name: my-cluster","ReleaseLabel: emr-7.4.0","Instances:","  MasterInstanceGroup:","    InstanceCount: 1","    InstanceType: m5.xlarge","JobFlowRole: EMR_EC2_DefaultRole  # TODO: a real instance profile","ServiceRole: EMR_DefaultRole  # TODO: a real service role"]},
+  "Kinesis": {type:"AWS::Kinesis::Stream", lines:["ShardCount: 1"]},
+  "Kinesis Data Streams": {type:"AWS::Kinesis::Stream", lines:["ShardCount: 1"]},
+  "Kinesis Data Firehose": {type:"AWS::KinesisFirehose::DeliveryStream", lines:["DeliveryStreamType: DirectPut"]},
+  "Glue": {type:"AWS::Glue::Job", lines:["Name: my-job","Role: !GetAtt GlueRole.Arn  # TODO: an IAM role ARN","Command:","  Name: glueetl","  ScriptLocation: s3://my-bucket/scripts/job.py  # TODO: your script location"]},
+  "QuickSight": {type:"AWS::QuickSight::DataSource", lines:["AwsAccountId: !Ref \"AWS::AccountId\"","DataSourceId: my-datasource","Name: my-datasource","Type: ATHENA"]},
+  "Lake Formation": {type:"AWS::LakeFormation::Resource", lines:["ResourceArn: arn:aws:s3:::my-bucket  # TODO: the S3 ARN to register","UseServiceLinkedRole: true"]},
+  "OpenSearch Service": {type:"AWS::OpenSearchService::Domain", lines:["EngineVersion: OpenSearch_2.15","ClusterConfig:","  InstanceType: t3.small.search"]},
+  "SageMaker": {type:"AWS::SageMaker::NotebookInstance", lines:["InstanceType: ml.t3.medium","RoleArn: !GetAtt SageMakerRole.Arn  # TODO: an IAM role ARN"]},
+  "Lex": {type:"AWS::Lex::Bot", lines:["Name: my-bot","RoleArn: !GetAtt LexRole.Arn  # TODO: an IAM role ARN","DataPrivacy: {ChildDirected: false}","IdleSessionTTLInSeconds: 300"]},
+  "Kendra": {type:"AWS::Kendra::Index", lines:["Name: my-index","Edition: DEVELOPER_EDITION","RoleArn: !GetAtt KendraRole.Arn  # TODO: an IAM role ARN"]},
+  "IAM": {type:"AWS::IAM::Role", lines:["AssumeRolePolicyDocument:","  Version: \"2012-10-17\"","  Statement:","    - Effect: Allow","      Principal: {Service: ec2.amazonaws.com}  # TODO: the real trusted principal","      Action: sts:AssumeRole"]},
+  "KMS": {type:"AWS::KMS::Key", lines:["KeyPolicy:","  Version: \"2012-10-17\"","  Statement:","    - Effect: Allow","      Principal: {AWS: !Sub \"arn:aws:iam::${AWS::AccountId}:root\"}","      Action: \"kms:*\"","      Resource: \"*\""]},
+  "Secrets Manager": {type:"AWS::SecretsManager::Secret", lines:["Name: my-secret","GenerateSecretString: {}"]},
+  "Cognito": {type:"AWS::Cognito::UserPool", lines:["UserPoolName: my-user-pool"]},
+  "GuardDuty": {type:"AWS::GuardDuty::Detector", lines:["Enable: true"]},
+  "Security Hub": {type:"AWS::SecurityHub::Hub", lines:[]},
+  "Shield": {type:"AWS::Shield::Protection", lines:["Name: my-protection","ResourceArn: !Ref ELB  # TODO: the ARN of the resource to protect (ALB, CloudFront, EIP, Global Accelerator)"]},
+  "WAF": {type:"AWS::WAFv2::WebACL", lines:["Name: my-web-acl","Scope: REGIONAL  # or CLOUDFRONT","DefaultAction: {Allow: {}}","VisibilityConfig: {SampledRequestsEnabled: true, CloudWatchMetricsEnabled: true, MetricName: myWebAcl}"]},
+  "Firewall Manager": {type:"AWS::FMS::Policy", lines:["PolicyName: my-policy","RemediationEnabled: false","ResourceType: \"AWS::ElasticLoadBalancingV2::LoadBalancer\"","SecurityServicePolicyData: {Type: WAFV2}"]},
+  "Macie": {type:"AWS::Macie::Session", lines:["Status: ENABLED"]},
+  "ACM": {type:"AWS::CertificateManager::Certificate", lines:["DomainName: example.com  # TODO: your domain","ValidationMethod: DNS"]},
+  "CloudWatch": {type:"AWS::CloudWatch::Alarm", lines:["MetricName: CPUUtilization","Namespace: AWS/EC2","Statistic: Average","Period: \"300\"","EvaluationPeriods: \"1\"","Threshold: \"80\"","ComparisonOperator: GreaterThanThreshold"]},
+  "CloudTrail": {type:"AWS::CloudTrail::Trail", lines:["S3BucketName: !Ref S3  # TODO: reference an existing, trail-policy-configured bucket","IsLogging: true","IsMultiRegionTrail: true"]},
+  "Config": {type:"AWS::Config::ConfigRule", lines:["Source: {Owner: AWS, SourceIdentifier: S3_BUCKET_PUBLIC_READ_PROHIBITED}"]},
+  "Systems Manager": {type:"AWS::SSM::Document", lines:["DocumentType: Command","Content: {schemaVersion: \"2.2\", description: \"Sandbox-generated document\", mainSteps: []}"]},
+  "AWS Chatbot": {type:"AWS::Chatbot::SlackChannelConfiguration", lines:["ConfigurationName: my-config","IamRoleArn: !GetAtt ChatbotRole.Arn  # TODO: an IAM role ARN","SlackChannelId: C0123456789  # TODO: your Slack channel ID","SlackWorkspaceId: T0123456789  # TODO: your Slack workspace ID"]},
+  "Service Catalog": {type:"AWS::ServiceCatalog::CloudFormationProduct", lines:["Name: my-product","Owner: platform-team","ProvisioningArtifactParameters:","  - Name: v1","    Info: {LoadTemplateFromURL: \"https://s3.amazonaws.com/my-bucket/product-template.yaml\"}  # TODO"]},
+};
+function sandboxCfnLogicalId(id, used){
+  let base = id.replace(/[^A-Za-z0-9]/g, "");
+  if(!base) base = "Resource";
+  if(/^[0-9]/.test(base)) base = "R" + base;
+  let candidate = base, i = 2;
+  while(used.has(candidate)){ candidate = base + i; i++; }
+  used.add(candidate);
+  return candidate;
+}
+function sandboxGenerateBlueprintCFN(){
+  const { title } = sandboxBlueprintTitleAndBlurb();
+  const used = new Set();
+  const idFor = {};
+  const resourceBlocks = [];
+  const unmapped = [];
+  sandboxNodes.forEach(node=>{
+    const logicalId = sandboxCfnLogicalId(node.id, used);
+    idFor[node.id] = logicalId;
+    const mapping = SANDBOX_CFN_MAP[node.name];
+    if(!mapping){
+      unmapped.push(node);
+      return;
+    }
+    const propLines = mapping.lines.map(l => "      " + l).join("\n");
+    resourceBlocks.push(
+      `  ${logicalId}:\n    Type: ${mapping.type}` + (mapping.lines.length ? `\n    Properties:\n${propLines}` : "")
+    );
+  });
+  const connectionLines = sandboxLinks
+    .filter(([a,b])=>!sandboxIsContainerLink(a,b))
+    .map(([a,b])=>{
+      const na = sandboxNodeById(a), nb = sandboxNodeById(b);
+      return (na && nb) ? `#   ${na.id} -> ${nb.id}` : null;
+    })
+    .filter(Boolean);
+  const unmappedLines = unmapped.map(n => `#   - ${n.id} (${n.name}): no standalone deployable CloudFormation resource type — this is either an account/console-level setting, a property of another resource, or a physical/ordering construct.`);
+
+  let out = `AWSTemplateFormatVersion: '2010-09-09'\n`;
+  out += `Description: >\n  ${title} - starter CloudFormation scaffold generated from the AWS SAA-C03 Sandbox.\n`;
+  out += `  Resource types are accurate, but property values are illustrative placeholders (marked TODO) -\n`;
+  out += `  review and fill in real values (VPC/subnet IDs, AMIs, ARNs, secrets) before deploying.\n\n`;
+  out += `Resources:\n`;
+  out += resourceBlocks.length ? resourceBlocks.join("\n\n") + "\n" : `  # (no mappable services on the board)\n`;
+  if(unmappedLines.length){
+    out += `\n# Diagram-only elements (no direct CloudFormation resource type):\n` + unmappedLines.join("\n") + "\n";
+  }
+  out += `\n# Connections from the sandbox board (wire these up explicitly - e.g. as Ref/GetAtt properties,\n`;
+  out += `# event targets, or subscriptions - if you extend this scaffold into a real template):\n`;
+  out += connectionLines.length ? connectionLines.join("\n") + "\n" : "#   (none)\n";
+  return out;
+}
+function sandboxDownloadFile(filename, content, mime){
+  const blob = new Blob([content], {type: mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+}
+function sandboxDownloadBlueprint(){
+  if(!sandboxNodes.length){ window.alert(T("sandboxBlueprintEmpty")); return; }
+  const { title } = sandboxBlueprintTitleAndBlurb();
+  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "sandbox-architecture";
+  sandboxDownloadFile(`${slug}-blueprint.svg`, sandboxGenerateBlueprintSVG(), "image/svg+xml");
+  sandboxDownloadFile(`${slug}-blueprint.md`, sandboxGenerateBlueprintMarkdown(), "text/markdown");
+  sandboxDownloadFile(`${slug}-blueprint.yaml`, sandboxGenerateBlueprintCFN(), "application/x-yaml");
+}
 /* Dropping a node inside (or, for an empty container, near) a VPC/Subnets box joins its group
    automatically — the AWS-diagram-tool convention of "drag it into the box" — and dropping a
    member outside its box's current bounds leaves the group the same way. A manual right-click
@@ -17021,6 +17403,8 @@ function initSandboxGamePanel(){
     sandboxLoadArchitecture(id);
     loadArchSelect.value = "";
   });
+  const blueprintBtn = document.getElementById("sandboxBlueprintBtn");
+  if(blueprintBtn) blueprintBtn.addEventListener("click", ()=>{ playClick(); sandboxDownloadBlueprint(); });
   const zoomInBtn = document.getElementById("sandboxZoomInBtn");
   if(zoomInBtn) zoomInBtn.addEventListener("click", ()=>{ playClick(); sandboxZoomIn(); });
   const zoomOutBtn = document.getElementById("sandboxZoomOutBtn");
