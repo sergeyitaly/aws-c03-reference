@@ -15038,7 +15038,11 @@ function catchCheckCollision(){
   if(!bucket || !catchCurrent) return null;
   // Hit-test against the drawn basket bowl shape itself, not the whole #catchBucket container —
   // ties the catch line to exactly what the player sees, immune to any container sizing quirks.
-  const bowlEl = bucket.querySelector(".sort-basket-svg path") || bucket;
+  // Must be a DIRECT child of the svg: the markup also has a <path> nested inside
+  // <defs><clipPath> (for the fill clip) that sorts earlier in document order but is never
+  // rendered, so a bare "svg path" selector grabs that invisible zero-rect path instead of the
+  // real bowl outline — silently breaking every catch regardless of bucket position.
+  const bowlEl = bucket.querySelector(".sort-basket-svg > path") || bucket;
   const bucketRect = bowlEl.getBoundingClientRect();
   const leftRect = catchCurrent.elLeft.getBoundingClientRect();
   const rightRect = catchCurrent.elRight.getBoundingClientRect();
